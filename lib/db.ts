@@ -1,5 +1,12 @@
 import { PrismaClient } from '@prisma/client'
 
+// Forceer library engine in plaats van client engine voor serverless omgevingen
+// Dit voorkomt de "requires adapter or accelerateUrl" error in Vercel
+// MOET worden ingesteld VOORDAT PrismaClient wordt geïmporteerd/geïnitialiseerd
+if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  process.env.PRISMA_CLIENT_ENGINE_TYPE = 'library'
+}
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
