@@ -678,27 +678,33 @@ export async function POST(request: NextRequest) {
       console.log("Interne kopie zou worden verzonden naar: businessscan@ai-group.nl");
     }
 
-    // Sla uitgebreide quickscan op in database
+    // Sla uitgebreide quickscan op in database (altijd, ook als email verzending faalt)
+    let savedQuickscanId = quickscanId || `full_quickscan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
-      await prisma.fullQuickscan.create({
+      const savedQuickscan = await prisma.fullQuickscan.create({
         data: {
-          quickscanId: quickscanId || `full_quickscan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          email,
+          quickscanId: savedQuickscanId,
+          email, // Emailadres van de aanvrager wordt hier opgeslagen
           url: normalizedUrl,
           fullAnalysis: fullAnalysis as any,
           emailSent,
           emailSentAt,
         },
       });
+      console.log(`Uitgebreide quickscan opgeslagen in database met email: ${email}, quickscanId: ${savedQuickscan.quickscanId}`);
     } catch (dbError) {
-      console.error("Database error:", dbError);
-      // Continue ook als database opslag faalt
+      console.error("Database error bij opslaan uitgebreide quickscan:", dbError);
+      // Gooi de error door zodat de gebruiker weet dat er iets mis is gegaan
+      return NextResponse.json(
+        { error: "Er is een fout opgetreden bij het opslaan van de uitgebreide quickscan in de database" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       message: "Uitgebreide quickscan is gegenereerd en verzonden",
-      quickscanId,
+      quickscanId: savedQuickscanId,
     });
   } catch (error) {
     console.error("Full quickscan error:", error);
