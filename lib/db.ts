@@ -7,6 +7,12 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function getPrismaClient() {
+  // In serverless omgevingen, check eerst globalThis voor bestaande client
+  if (typeof globalThis !== 'undefined' && globalForPrisma.prisma) {
+    prismaClient = globalForPrisma.prisma
+    return prismaClient
+  }
+  
   if (prismaClient) {
     return prismaClient
   }
@@ -38,19 +44,52 @@ function getPrismaClient() {
   }
 
   try {
-    prismaClient = new PrismaClient()
+    // Configureer Prisma Client voor serverless omgevingen (Vercel + Neon)
+    const prismaOptions: any = {
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    }
     
-    if (process.env.NODE_ENV !== 'production') {
+    // Voor Neon in serverless: optimaliseer connection string en configureer pooling
+    let databaseUrl = process.env.DATABASE_URL
+    if (databaseUrl && (databaseUrl.includes('neon.tech') || databaseUrl.includes('pooler'))) {
+      // Zorg dat connection pooling parameters aanwezig zijn voor Neon
+      const url = new URL(databaseUrl)
+      
+      // Voeg connection pooling parameters toe als ze nog niet aanwezig zijn
+      if (!url.searchParams.has('pgbouncer')) {
+        url.searchParams.set('pgbouncer', 'true')
+      }
+      if (!url.searchParams.has('connect_timeout')) {
+        url.searchParams.set('connect_timeout', '10')
+      }
+      
+      databaseUrl = url.toString()
+      
+      // Configureer connection pool limits voor serverless
+      prismaOptions.datasources = {
+        db: {
+          url: databaseUrl,
+        },
+      }
+    }
+    
+    prismaClient = new PrismaClient(prismaOptions)
+    
+    // In serverless omgevingen (zoals Vercel), gebruik globalThis voor connection reuse
+    // Dit voorkomt het maken van te veel connections
+    if (typeof globalThis !== 'undefined') {
       globalForPrisma.prisma = prismaClient
     }
 
     return prismaClient
   } catch (error) {
     // During build, Prisma Client initialization might fail
-    console.warn('Prisma Client initialization failed:', error)
+    console.error('Prisma Client initialization failed:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error details:', { errorMessage, hasDatabaseUrl: !!process.env.DATABASE_URL })
     return new Proxy({}, {
       get() {
-        throw new Error('Prisma Client initialization failed. Make sure DATABASE_URL is set correctly.')
+        throw new Error(`Prisma Client initialization failed: ${errorMessage}. Make sure DATABASE_URL is set correctly.`)
       }
     })
   }
