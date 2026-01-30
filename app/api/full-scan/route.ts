@@ -600,8 +600,15 @@ function generateEmailHTML(url: string, fullAnalysis: any) {
 }
 
 export async function POST(request: NextRequest) {
+  let email: string | undefined;
+  let url: string | undefined;
+  let quickscanId: string | undefined;
+  
   try {
-    const { quickscanId, email, url } = await request.json();
+    const body = await request.json();
+    quickscanId = body.quickscanId;
+    email = body.email;
+    url = body.url;
 
     if (!email || !url) {
       return NextResponse.json(
@@ -694,9 +701,16 @@ export async function POST(request: NextRequest) {
       console.log(`Uitgebreide quickscan opgeslagen in database met email: ${email}, quickscanId: ${savedQuickscan.quickscanId}`);
     } catch (dbError) {
       console.error("Database error bij opslaan uitgebreide quickscan:", dbError);
+      const errorMessage = dbError instanceof Error ? dbError.message : "Onbekende database fout";
+      const errorStack = dbError instanceof Error ? dbError.stack : undefined;
+      console.error("Database error details:", { errorMessage, errorStack, email, url, savedQuickscanId });
+      
       // Gooi de error door zodat de gebruiker weet dat er iets mis is gegaan
       return NextResponse.json(
-        { error: "Er is een fout opgetreden bij het opslaan van de uitgebreide quickscan in de database" },
+        { 
+          error: "Er is een fout opgetreden bij het opslaan van de uitgebreide quickscan in de database",
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        },
         { status: 500 }
       );
     }
@@ -708,8 +722,15 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Full quickscan error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Onbekende fout";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("Error details:", { errorMessage, errorStack, email, url });
+    
     return NextResponse.json(
-      { error: "Er is een fout opgetreden bij het genereren van de uitgebreide quickscan" },
+      { 
+        error: "Er is een fout opgetreden bij het genereren van de uitgebreide quickscan",
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }

@@ -227,8 +227,11 @@ Belangrijk:
 }
 
 export async function POST(request: NextRequest) {
+  let url: string | undefined;
+  
   try {
-    const { url } = await request.json();
+    const body = await request.json();
+    url = body.url;
 
     if (!url) {
       return NextResponse.json(
@@ -265,8 +268,11 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (dbError) {
-      console.error("Database error:", dbError);
+      console.error("Database error bij opslaan quickscan:", dbError);
+      const errorMessage = dbError instanceof Error ? dbError.message : "Onbekende database fout";
+      console.error("Database error details:", { errorMessage, quickscanId, url: normalizedUrl });
       // Continue ook als database opslag faalt (voor backwards compatibility)
+      // Maar log wel de error voor debugging
     }
     
     return NextResponse.json({
@@ -277,8 +283,15 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Quickscan error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Onbekende fout";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("Error details:", { errorMessage, errorStack, url });
+    
     return NextResponse.json(
-      { error: "Er is een fout opgetreden bij het uitvoeren van de quickscan" },
+      { 
+        error: "Er is een fout opgetreden bij het uitvoeren van de quickscan",
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }
