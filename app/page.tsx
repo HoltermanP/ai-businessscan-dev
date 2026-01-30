@@ -1,65 +1,207 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkles, TrendingUp, Zap, Mail, CheckCircle2, ArrowRight } from "lucide-react";
+import { normalizeUrl } from "@/lib/url-utils";
 
 export default function Home() {
+  const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim()) return;
+
+    // Normaliseer URL (voeg https:// toe als nodig)
+    const normalizedUrl = normalizeUrl(url.trim());
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: normalizedUrl }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Sla genormaliseerde URL op in localStorage voor gebruik op resultaten pagina
+        localStorage.setItem(`scan_${data.scanId}`, normalizedUrl);
+        router.push(`/resultaten?scanId=${data.scanId}`);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+      }
+    } catch (error) {
+      alert("Er is een fout opgetreden. Probeer het opnieuw.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-16 md:py-24">
+        <div className="max-w-4xl mx-auto text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 mb-6">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-sm font-medium">AI-Powered Business Analyse</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            Ontdek de AI Kansen voor
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              Jouw Bedrijf
+            </span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Voer simpelweg de URL van je website in en ontvang binnen enkele minuten een 
+            gedetailleerde analyse met de top 3 AI-kansen inclusief concrete businesscases.
           </p>
+
+          {/* URL Input Form */}
+          <Card className="max-w-2xl mx-auto shadow-xl border-0">
+            <CardHeader>
+              <CardTitle className="text-2xl">Start je gratis scan</CardTitle>
+              <CardDescription>
+                Voer de URL van je bedrijfswebsite in om te beginnen
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="jouwbedrijf.nl of https://jouwbedrijf.nl"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="flex-1 text-lg h-12"
+                    disabled={isLoading}
+                    required
+                  />
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="h-12 px-8"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Scannen...
+                      </>
+                    ) : (
+                      <>
+                        Scan Starten
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Features Section */}
+        <div className="max-w-6xl mx-auto mt-24">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            Wat krijg je in je scan?
+          </h2>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+                <CardTitle>Bedrijfsanalyse</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Een uitgebreide beschrijving van je bedrijf op basis van je website, 
+                  inclusief diensten, doelgroep en marktpositie.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
+                  <Zap className="w-6 h-6 text-purple-600" />
+                </div>
+                <CardTitle>Top 3 AI Kansen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Drie concrete AI-toepassingen die perfect passen bij jouw bedrijf, 
+                  met uitleg waarom ze relevant zijn.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                </div>
+                <CardTitle>Businesscase</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Globale inschatting van de potentiële impact, ROI en implementatiekosten 
+                  voor elke AI-kans.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </main>
+
+        {/* CTA Section */}
+        <div className="max-w-4xl mx-auto mt-24 text-center">
+          <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 shadow-xl">
+            <CardHeader>
+              <Mail className="w-12 h-12 mx-auto mb-4" />
+              <CardTitle className="text-3xl text-white">
+                Wil je een uitgebreide analyse?
+              </CardTitle>
+              <CardDescription className="text-blue-100 text-lg">
+                Vraag een volledige scan aan en ontvang per email:
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="text-left max-w-md mx-auto space-y-3 mb-6">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Uitgebreide bedrijfsanalyse</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Gedetailleerd implementatievoorstel</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Plan van aanpak per AI-kans</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  <span>Complete businesscase met ROI-berekening</span>
+                </li>
+              </ul>
+              <p className="text-blue-100 mb-4">
+                Deze optie is beschikbaar na het bekijken van je gratis scan resultaten.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

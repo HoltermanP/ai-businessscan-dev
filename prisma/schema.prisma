@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Scan {
+  id                String   @id @default(cuid())
+  scanId            String   @unique
+  url               String
+  companyDescription String @db.Text
+  aiOpportunities   Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([scanId])
+  @@index([createdAt])
+}
+
+model FullScan {
+  id                String   @id @default(cuid())
+  scanId            String   @unique
+  email             String
+  url               String
+  fullAnalysis      Json
+  emailSent         Boolean  @default(false)
+  emailSentAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([scanId])
+  @@index([email])
+}
