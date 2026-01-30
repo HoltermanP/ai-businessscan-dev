@@ -45,32 +45,11 @@ function getPrismaClient() {
 
   try {
     // Configureer Prisma Client voor serverless omgevingen (Vercel + Neon)
+    // De DATABASE_URL wordt automatisch gelezen uit environment variables
+    // Connection pooling parameters (pgbouncer, connect_timeout) moeten
+    // in de DATABASE_URL zelf zitten, niet via datasources configuratie
     const prismaOptions: any = {
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    }
-    
-    // Voor Neon in serverless: optimaliseer connection string en configureer pooling
-    let databaseUrl = process.env.DATABASE_URL
-    if (databaseUrl && (databaseUrl.includes('neon.tech') || databaseUrl.includes('pooler'))) {
-      // Zorg dat connection pooling parameters aanwezig zijn voor Neon
-      const url = new URL(databaseUrl)
-      
-      // Voeg connection pooling parameters toe als ze nog niet aanwezig zijn
-      if (!url.searchParams.has('pgbouncer')) {
-        url.searchParams.set('pgbouncer', 'true')
-      }
-      if (!url.searchParams.has('connect_timeout')) {
-        url.searchParams.set('connect_timeout', '10')
-      }
-      
-      databaseUrl = url.toString()
-      
-      // Configureer connection pool limits voor serverless
-      prismaOptions.datasources = {
-        db: {
-          url: databaseUrl,
-        },
-      }
     }
     
     prismaClient = new PrismaClient(prismaOptions)
