@@ -5,28 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Loader2, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ScanStep = 
+export type QuickscanStep = 
   | "initializing"
   | "fetching"
   | "analyzing"
   | "generating"
   | "completed";
 
-interface ScanProgressProps {
-  currentStep: ScanStep;
+interface QuickscanProgressProps {
+  currentStep: QuickscanStep;
   progress?: number; // 0-100, optioneel voor meer gedetailleerde progress
   className?: string;
 }
 
-const scanSteps: Array<{
-  id: ScanStep;
+const quickscanSteps: Array<{
+  id: QuickscanStep;
   label: string;
   description: string;
 }> = [
   {
     id: "initializing",
     label: "Initialiseren",
-    description: "Scan wordt voorbereid...",
+    description: "Quickscan wordt voorbereid...",
   },
   {
     id: "fetching",
@@ -46,16 +46,16 @@ const scanSteps: Array<{
   {
     id: "completed",
     label: "Voltooid",
-    description: "Scan is klaar!",
+    description: "Quickscan is klaar!",
   },
 ];
 
-export function ScanProgress({ 
+export function QuickscanProgress({ 
   currentStep, 
   progress, 
   className 
-}: ScanProgressProps) {
-  const currentStepIndex = scanSteps.findIndex((step) => step.id === currentStep);
+}: QuickscanProgressProps) {
+  const currentStepIndex = quickscanSteps.findIndex((step) => step.id === currentStep);
   const isCompleted = currentStep === "completed";
 
   // Bereken progress percentage
@@ -66,7 +66,7 @@ export function ScanProgress({
     
     // Automatische progress op basis van stap
     if (isCompleted) return 100;
-    return ((currentStepIndex + 1) / scanSteps.length) * 100;
+    return ((currentStepIndex + 1) / quickscanSteps.length) * 100;
   };
 
   const progressPercentage = getProgressPercentage();
@@ -79,7 +79,7 @@ export function ScanProgress({
             "w-5 h-5",
             isCompleted ? "hidden" : "animate-spin"
           )} />
-          <span>Scan in uitvoering...</span>
+          <span>Quickscan in uitvoering...</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -94,7 +94,7 @@ export function ScanProgress({
 
         {/* Steps */}
         <div className="space-y-4">
-          {scanSteps.map((step, index) => {
+          {quickscanSteps.map((step, index) => {
             const isActive = index === currentStepIndex;
             const isPast = index < currentStepIndex;
             const isFuture = index > currentStepIndex;

@@ -18,11 +18,13 @@ interface AIOpportunity {
     implementationCost: string;
     timeToValue: string;
     benefits: string[];
+    rationale?: string;
+    keyMetrics?: string[];
   };
 }
 
-interface ScanResult {
-  scanId: string;
+interface QuickscanResult {
+  quickscanId: string;
   url: string;
   companyDescription: string;
   aiOpportunities: AIOpportunity[];
@@ -32,74 +34,74 @@ interface ScanResult {
 function ResultatenContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [quickscanResult, setQuickscanResult] = useState<QuickscanResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRequestingFullScan, setIsRequestingFullScan] = useState(false);
+  const [isRequestingFullQuickscan, setIsRequestingFullQuickscan] = useState(false);
   const [email, setEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
 
   useEffect(() => {
-    const scanId = searchParams.get("scanId");
-    if (!scanId) {
+    const quickscanId = searchParams.get("quickscanId");
+    if (!quickscanId) {
       router.push("/");
       return;
     }
 
-    // In productie zou je hier de scan resultaten ophalen uit een database
-    // Voor nu gebruiken we de scanId om de data opnieuw te genereren
-    fetchScanResult(scanId);
+    // In productie zou je hier de quickscan resultaten ophalen uit een database
+    // Voor nu gebruiken we de quickscanId om de data opnieuw te genereren
+    fetchQuickscanResult(quickscanId);
   }, [searchParams, router]);
 
-  const fetchScanResult = async (scanId: string) => {
+  const fetchQuickscanResult = async (quickscanId: string) => {
     setIsLoading(true);
     
     try {
-      // Haal scan op uit database
-      const response = await fetch(`/api/scan/${scanId}`);
+      // Haal quickscan op uit database
+      const response = await fetch(`/api/quickscan/${quickscanId}`);
       
       if (response.ok) {
         const data = await response.json();
-        setScanResult(data);
+        setQuickscanResult(data);
       } else {
-        // Fallback naar oude methode als scan niet in database staat
-        const storedUrl = localStorage.getItem(`scan_${scanId}`);
+        // Fallback naar oude methode als quickscan niet in database staat
+        const storedUrl = localStorage.getItem(`quickscan_${quickscanId}`);
         if (storedUrl) {
-          const scanResponse = await fetch("/api/scan", {
+          const quickscanResponse = await fetch("/api/quickscan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: storedUrl }),
           });
           
-          if (scanResponse.ok) {
-            const scanData = await scanResponse.json();
-            setScanResult(scanData);
+          if (quickscanResponse.ok) {
+            const quickscanData = await quickscanResponse.json();
+            setQuickscanResult(quickscanData);
           }
         }
       }
     } catch (error) {
-      console.error("Error fetching scan result:", error);
+      console.error("Error fetching quickscan result:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRequestFullScan = async () => {
-    if (!email || !scanResult) return;
+  const handleRequestFullQuickscan = async () => {
+    if (!email || !quickscanResult) return;
 
-    setIsRequestingFullScan(true);
+    setIsRequestingFullQuickscan(true);
     try {
       const response = await fetch("/api/full-scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scanId: scanResult.scanId,
+          quickscanId: quickscanResult.quickscanId,
           email,
-          url: scanResult.url,
+          url: quickscanResult.url,
         }),
       });
 
       if (response.ok) {
-        alert("Uitgebreide scan aangevraagd! Je ontvangt binnenkort een email met de volledige analyse.");
+        alert("Uitgebreide quickscan aangevraagd! Je ontvangt binnenkort een email met de volledige analyse.");
         setShowEmailForm(false);
       } else {
         alert("Er is een fout opgetreden. Probeer het opnieuw.");
@@ -107,7 +109,7 @@ function ResultatenContent() {
     } catch (error) {
       alert("Er is een fout opgetreden. Probeer het opnieuw.");
     } finally {
-      setIsRequestingFullScan(false);
+      setIsRequestingFullQuickscan(false);
     }
   };
 
@@ -125,7 +127,7 @@ function ResultatenContent() {
     );
   }
 
-  if (!scanResult) {
+  if (!quickscanResult) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="fixed top-4 right-4 z-50">
@@ -133,7 +135,7 @@ function ResultatenContent() {
         </div>
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Scan niet gevonden</CardTitle>
+            <CardTitle>Quickscan niet gevonden</CardTitle>
           </CardHeader>
           <CardContent>
             <Button onClick={() => router.push("/")}>Terug naar home</Button>
@@ -163,13 +165,13 @@ function ResultatenContent() {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 mb-4">
               <CheckCircle2 className="w-4 h-4" />
-              <span className="text-sm font-medium">Scan Voltooid</span>
+              <span className="text-sm font-medium">Quickscan Voltooid</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-50 mb-4">
               Je Bedrijfsanalyse is Klaar
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Geanalyseerde website: <span className="font-semibold">{scanResult.url}</span>
+              Geanalyseerde website: <span className="font-semibold">{quickscanResult.url}</span>
             </p>
           </div>
 
@@ -182,7 +184,7 @@ function ResultatenContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{scanResult.companyDescription}</p>
+              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{quickscanResult.companyDescription}</p>
             </CardContent>
           </Card>
 
@@ -192,7 +194,7 @@ function ResultatenContent() {
               Top 3 AI Kansen voor Jouw Bedrijf
             </h2>
             <div className="space-y-6">
-              {scanResult.aiOpportunities.map((opportunity, index) => (
+              {quickscanResult.aiOpportunities.map((opportunity, index) => (
                 <Card key={opportunity.id} className="shadow-lg border-0 hover:shadow-xl transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -236,6 +238,27 @@ function ResultatenContent() {
                             <span className="font-medium">Time to Value:</span>
                             <span>{opportunity.businessCase.timeToValue}</span>
                           </div>
+                          {opportunity.businessCase.rationale && (
+                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                              <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+                                <span className="font-medium">Onderbouwing: </span>
+                                {opportunity.businessCase.rationale}
+                              </p>
+                            </div>
+                          )}
+                          {opportunity.businessCase.keyMetrics && opportunity.businessCase.keyMetrics.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Belangrijkste metrics:</p>
+                              <ul className="space-y-1">
+                                {opportunity.businessCase.keyMetrics.map((metric: string, idx: number) => (
+                                  <li key={idx} className="text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                                    <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
+                                    <span>{metric}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div>
@@ -259,7 +282,7 @@ function ResultatenContent() {
             </div>
           </div>
 
-          {/* CTA voor Uitgebreide Scan */}
+          {/* CTA voor Uitgebreide Quickscan */}
           <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 shadow-xl">
             <CardHeader>
               <CardTitle className="text-3xl text-white flex items-center gap-2">
@@ -267,7 +290,7 @@ function ResultatenContent() {
                 Wil je een uitgebreide analyse?
               </CardTitle>
               <CardDescription className="text-blue-100 text-lg">
-                Ontvang een volledige scan per email met implementatievoorstel, plan van aanpak en gedetailleerde businesscase
+                Ontvang een volledige quickscan per email met implementatievoorstel, plan van aanpak en gedetailleerde businesscase
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -279,7 +302,7 @@ function ResultatenContent() {
                   className="w-full md:w-auto"
                 >
                   <Mail className="w-5 h-5 mr-2" />
-                  Vraag Uitgebreide Scan Aan
+                  Vraag Uitgebreide Quickscan Aan
                 </Button>
               ) : (
                 <div className="space-y-4">
@@ -300,11 +323,11 @@ function ResultatenContent() {
                     <Button
                       size="lg"
                       variant="secondary"
-                      onClick={handleRequestFullScan}
-                      disabled={!email || isRequestingFullScan}
+                      onClick={handleRequestFullQuickscan}
+                      disabled={!email || isRequestingFullQuickscan}
                       className="flex-1"
                     >
-                      {isRequestingFullScan ? "Verzenden..." : "Verstuur Aanvraag"}
+                      {isRequestingFullQuickscan ? "Verzenden..." : "Verstuur Aanvraag"}
                     </Button>
                     <Button
                       size="lg"

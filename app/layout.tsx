@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Business Scan - Ontdek AI Kansen voor Jouw Bedrijf",
-  description: "Laat je bedrijf scannen en ontdek de top 3 AI kansen met concrete businesscases. Gratis bedrijfsanalyse op basis van je website.",
+  title: "AI Business Quickscan - Ontdek AI Kansen voor Jouw Bedrijf",
+  description: "Laat je bedrijf quickscannen en ontdek de top 3 AI kansen met concrete businesscases. Gratis bedrijfsanalyse op basis van je website.",
 };
 
 export default function RootLayout({

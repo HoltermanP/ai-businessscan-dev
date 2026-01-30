@@ -285,9 +285,11 @@ Belangrijk:
 - Focus alleen op de AI-kansen die in de basis analyse zijn gegeven - deze zijn al gefilterd op relevantie
 - Geef voor elke AI-kans een gedetailleerd implementatieplan met 3 fasen
 - Maak realistische financiële projecties gebaseerd op de specifieke AI-kans en het specifieke bedrijf
+- Voor de financialProjection: geef concrete, onderbouwde schattingen van besparingen en omzetgroei. Leg uit hoe deze worden gerealiseerd (bijv. tijdsbesparing, kostenreductie, omzetgroei). Wees realistisch maar wel aanlokkend - geen overdreven claims
 - Identificeer specifieke risico's en mitigaties voor elke kans
 - Maak alles specifiek en relevant voor dit bedrijf - geen generieke voorbeelden
 - Zorg dat alle details aansluiten bij de werkelijke bedrijfsactiviteiten zoals beschreven in de bedrijfsbeschrijving
+- De businesscase moet overtuigend zijn maar gebaseerd op realistische aannames - gebruik concrete voorbeelden uit de bedrijfsactiviteiten
 - Geef alleen geldige JSON terug, geen extra tekst`;
 
     const completion = await openai.chat.completions.create({
@@ -482,7 +484,7 @@ function generateEmailHTML(url: string, fullAnalysis: any) {
     <body>
       <div class="container">
         <div class="header">
-          <h1>Uitgebreide AI Business Scan</h1>
+          <h1>Uitgebreide AI Business Quickscan</h1>
           <p>Geanalyseerde website: ${url}</p>
         </div>
         <div class="content">
@@ -599,7 +601,7 @@ function generateEmailHTML(url: string, fullAnalysis: any) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { scanId, email, url } = await request.json();
+    const { quickscanId, email, url } = await request.json();
 
     if (!email || !url) {
       return NextResponse.json(
@@ -643,12 +645,27 @@ export async function POST(request: NextRequest) {
     
     if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "re_placeholder_key") {
       try {
+        // Verstuur email naar gebruiker
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
           to: email,
-          subject: `Uitgebreide AI Business Scan - ${url}`,
+          subject: `Uitgebreide AI Business Quickscan - ${url}`,
           html: emailHTML,
         });
+        
+        // Verstuur ook een kopie naar businessscan@ai-group.nl
+        const internalEmailHTML = emailHTML.replace(
+          '<h1>Uitgebreide AI Business Quickscan</h1>',
+          `<h1>Uitgebreide AI Business Quickscan</h1><p style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 20px;"><strong>Interne kopie:</strong> Deze analyse is verzonden naar ${email}</p>`
+        );
+        
+        await resend.emails.send({
+          from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+          to: "businessscan@ai-group.nl",
+          subject: `[Interne Kopie] Uitgebreide AI Business Quickscan - ${url} (voor ${email})`,
+          html: internalEmailHTML,
+        });
+        
         emailSent = true;
         emailSentAt = new Date();
       } catch (emailError) {
@@ -658,13 +675,14 @@ export async function POST(request: NextRequest) {
     } else {
       console.log("RESEND_API_KEY niet ingesteld, email wordt niet verzonden");
       console.log("Email zou worden verzonden naar:", email);
+      console.log("Interne kopie zou worden verzonden naar: businessscan@ai-group.nl");
     }
 
-    // Sla uitgebreide scan op in database
+    // Sla uitgebreide quickscan op in database
     try {
-      await prisma.fullScan.create({
+      await prisma.fullQuickscan.create({
         data: {
-          scanId: scanId || `full_scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          quickscanId: quickscanId || `full_quickscan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           email,
           url: normalizedUrl,
           fullAnalysis: fullAnalysis as any,
@@ -679,13 +697,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Uitgebreide scan is gegenereerd en verzonden",
-      scanId,
+      message: "Uitgebreide quickscan is gegenereerd en verzonden",
+      quickscanId,
     });
   } catch (error) {
-    console.error("Full scan error:", error);
+    console.error("Full quickscan error:", error);
     return NextResponse.json(
-      { error: "Er is een fout opgetreden bij het genereren van de uitgebreide scan" },
+      { error: "Er is een fout opgetreden bij het genereren van de uitgebreide quickscan" },
       { status: 500 }
     );
   }

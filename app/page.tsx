@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, TrendingUp, Zap, Mail, CheckCircle2, ArrowRight } from "lucide-react";
 import { normalizeUrl } from "@/lib/url-utils";
-import { ScanProgress, type ScanStep } from "@/components/scan-progress";
+import { QuickscanProgress, type QuickscanStep } from "@/components/quickscan-progress";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [scanStep, setScanStep] = useState<ScanStep>("initializing");
+  const [quickscanStep, setQuickscanStep] = useState<QuickscanStep>("initializing");
   const [progress, setProgress] = useState(0);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function Home() {
         progressIntervalRef.current = null;
       }
       // Reset progress state wanneer niet meer aan het laden
-      setScanStep("initializing");
+      setQuickscanStep("initializing");
       setProgress(0);
       return;
     }
@@ -38,10 +38,10 @@ export default function Home() {
     }
 
     // Reset progress bij start
-    setScanStep("initializing");
+    setQuickscanStep("initializing");
     setProgress(0);
 
-    // Progress simulatie tijdens scan
+    // Progress simulatie tijdens quickscan
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
         // Stop als we al op 100% zijn
@@ -54,16 +54,16 @@ export default function Home() {
         }
 
         if (prev < 20) {
-          setScanStep("initializing");
+          setQuickscanStep("initializing");
           return Math.min(20, prev + 2);
         } else if (prev < 40) {
-          setScanStep("fetching");
+          setQuickscanStep("fetching");
           return Math.min(40, prev + 2);
         } else if (prev < 70) {
-          setScanStep("analyzing");
+          setQuickscanStep("analyzing");
           return Math.min(70, prev + 1.5);
         } else if (prev < 95) {
-          setScanStep("generating");
+          setQuickscanStep("generating");
           return Math.min(95, prev + 1);
         } else {
           // Bij 95%+ stoppen we de interval
@@ -71,7 +71,7 @@ export default function Home() {
             clearInterval(progressIntervalRef.current);
             progressIntervalRef.current = null;
           }
-          setScanStep("generating");
+          setQuickscanStep("generating");
           return prev;
         }
       });
@@ -97,12 +97,12 @@ export default function Home() {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
     }
-    setScanStep("initializing");
+    setQuickscanStep("initializing");
     setProgress(0);
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/scan", {
+      const response = await fetch("/api/quickscan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: normalizedUrl }),
@@ -118,15 +118,15 @@ export default function Home() {
         }
         
         // Voltooi de progress
-        setScanStep("completed");
+        setQuickscanStep("completed");
         setProgress(100);
         
         // Wacht kort zodat gebruiker de "completed" status ziet
         await new Promise(resolve => setTimeout(resolve, 500));
         
         // Sla genormaliseerde URL op in localStorage voor gebruik op resultaten pagina
-        localStorage.setItem(`scan_${data.scanId}`, normalizedUrl);
-        router.push(`/resultaten?scanId=${data.scanId}`);
+        localStorage.setItem(`quickscan_${data.quickscanId}`, normalizedUrl);
+        router.push(`/resultaten?quickscanId=${data.quickscanId}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
         alert(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
@@ -147,10 +147,10 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 md:py-24">
-        {/* Scan Progress - alleen tonen tijdens scan, verberg rest van content */}
+        {/* Quickscan Progress - alleen tonen tijdens quickscan, verberg rest van content */}
         {isLoading ? (
           <div className="max-w-2xl mx-auto">
-            <ScanProgress currentStep={scanStep} progress={progress} />
+            <QuickscanProgress currentStep={quickscanStep} progress={progress} />
           </div>
         ) : (
           <>
@@ -175,7 +175,7 @@ export default function Home() {
           {/* URL Input Form */}
           <Card className="max-w-2xl mx-auto shadow-xl border-0">
             <CardHeader>
-              <CardTitle className="text-2xl">Start je gratis scan</CardTitle>
+              <CardTitle className="text-2xl">Start je gratis quickscan</CardTitle>
               <CardDescription>
                 Voer de URL van je bedrijfswebsite in om te beginnen
               </CardDescription>
@@ -205,7 +205,7 @@ export default function Home() {
                       </>
                     ) : (
                       <>
-                        Scan Starten
+                        Quickscan Starten
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </>
                     )}
@@ -219,7 +219,7 @@ export default function Home() {
         {/* Features Section */}
         <div className="max-w-6xl mx-auto mt-24">
           <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-50 mb-12">
-            Wat krijg je in je scan?
+            Wat krijg je in je quickscan?
           </h2>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -279,7 +279,7 @@ export default function Home() {
                 Wil je een uitgebreide analyse?
               </CardTitle>
               <CardDescription className="text-blue-100 text-lg">
-                Vraag een volledige scan aan en ontvang per email:
+                Vraag een volledige quickscan aan en ontvang per email:
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -302,7 +302,7 @@ export default function Home() {
                 </li>
               </ul>
               <p className="text-blue-100 mb-4">
-                Deze optie is beschikbaar na het bekijken van je gratis scan resultaten.
+                Deze optie is beschikbaar na het bekijken van je gratis quickscan resultaten.
               </p>
             </CardContent>
           </Card>

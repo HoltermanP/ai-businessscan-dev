@@ -9,22 +9,22 @@ datasource db {
   provider = "postgresql"
 }
 
-model Scan {
+model Quickscan {
   id                String   @id @default(cuid())
-  scanId            String   @unique
+  quickscanId       String   @unique
   url               String
   companyDescription String @db.Text
   aiOpportunities   Json
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  @@index([scanId])
+  @@index([quickscanId])
   @@index([createdAt])
 }
 
-model FullScan {
+model FullQuickscan {
   id                String   @id @default(cuid())
-  scanId            String   @unique
+  quickscanId       String   @unique
   email             String
   url               String
   fullAnalysis      Json
@@ -33,6 +33,6 @@ model FullScan {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  @@index([scanId])
+  @@index([quickscanId])
   @@index([email])
 }
