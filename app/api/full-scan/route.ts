@@ -605,17 +605,32 @@ export async function POST(request: NextRequest) {
   let quickscanId: string | undefined;
   
   try {
-    const body = await request.json();
-    quickscanId = body.quickscanId;
-    email = body.email;
-    url = body.url;
+    // Parse request body met error handling
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return NextResponse.json(
+        { error: "Ongeldig request body. Verwacht JSON formaat." },
+        { status: 400 }
+      );
+    }
+    
+    quickscanId = body?.quickscanId;
+    email = body?.email;
+    url = body?.url;
 
     if (!email || !url) {
+      console.error("Missing required fields:", { email: !!email, url: !!url, body });
       return NextResponse.json(
         { error: "Email en URL zijn verplicht" },
         { status: 400 }
       );
     }
+    
+    // Log dat we beginnen (zonder gevoelige data)
+    console.log("Starting full scan request:", { hasEmail: !!email, hasUrl: !!url, quickscanId });
 
     // Valideer email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -638,10 +653,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Genereer basis analyse (in productie zou je deze uit database halen)
+    console.log("Starting website analysis for:", normalizedUrl);
     const basicAnalysis = await analyzeWebsite(normalizedUrl);
+    console.log("Basic analysis completed");
 
     // Genereer uitgebreide analyse
+    console.log("Starting full analysis generation");
     const fullAnalysis = await generateFullAnalysis(url, basicAnalysis);
+    console.log("Full analysis completed");
 
     // Genereer email HTML
     const emailHTML = generateEmailHTML(normalizedUrl, fullAnalysis);
@@ -688,6 +707,9 @@ export async function POST(request: NextRequest) {
     // Sla uitgebreide quickscan op in database (altijd, ook als email verzending faalt)
     let savedQuickscanId = quickscanId || `full_quickscan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
+      console.log("Attempting to save to database:", { savedQuickscanId, hasEmail: !!email, hasUrl: !!normalizedUrl });
+      console.log("DATABASE_URL check:", process.env.DATABASE_URL ? "Set" : "NOT SET");
+      
       const savedQuickscan = await prisma.fullQuickscan.create({
         data: {
           quickscanId: savedQuickscanId,
@@ -703,7 +725,15 @@ export async function POST(request: NextRequest) {
       console.error("Database error bij opslaan uitgebreide quickscan:", dbError);
       const errorMessage = dbError instanceof Error ? dbError.message : "Onbekende database fout";
       const errorStack = dbError instanceof Error ? dbError.stack : undefined;
-      console.error("Database error details:", { errorMessage, errorStack, email, url, savedQuickscanId });
+      console.error("Database error details:", { 
+        errorMessage, 
+        errorStack, 
+        email, 
+        url, 
+        savedQuickscanId,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        nodeEnv: process.env.NODE_ENV
+      });
       
       // Gooi de error door zodat de gebruiker weet dat er iets mis is gegaan
       return NextResponse.json(
