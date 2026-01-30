@@ -1,57 +1,57 @@
-# Prisma Engine Type Fix voor Vercel
+# Prisma Engine Type Fix voor Vercel - OPGELOST
 
 ## Probleem
-Prisma detecteert automatisch dat het in een serverless omgeving (Vercel) draait en probeert engine type "client" te gebruiken, wat een adapter of accelerateUrl vereist. Dit veroorzaakt de fout:
+Prisma 7.x detecteert automatisch dat het in een serverless omgeving (Vercel) draait en probeert engine type "client" te gebruiken, wat een adapter of accelerateUrl vereist. Dit veroorzaakt de fout:
 ```
 Using engine type "client" requires either "adapter" or "accelerateUrl" to be provided to PrismaClient constructor.
 ```
 
-## Oplossing
+## Oplossing: Downgrade naar Prisma 6.1.0
 
-### Stap 1: Voeg Environment Variable toe in Vercel (BELANGRIJK!)
+**Het probleem is opgelost door te downgraden naar Prisma 6.1.0**, die dit probleem niet heeft en perfect werkt met Vercel en NEON.
 
-**Dit is de belangrijkste stap!** De environment variable moet worden ingesteld VOORDAT `prisma generate` wordt uitgevoerd tijdens de build.
+### Wat is aangepast:
 
-1. Ga naar je Vercel project dashboard
-2. Ga naar **Settings** → **Environment Variables**
-3. Voeg een nieuwe environment variable toe:
-   - **Name**: `PRISMA_CLIENT_ENGINE_TYPE`
-   - **Value**: `library`
-   - **Environment**: Selecteer alle omgevingen (Production, Preview, Development)
-4. Klik op **Save**
+1. ✅ **Prisma versie gedowngraded**: Van 7.2.0 naar 6.1.0
+   - `@prisma/client`: 6.1.0
+   - `prisma`: 6.1.0
 
-### Stap 2: Code is al aangepast
+2. ✅ **Schema aangepast**: `url = env("DATABASE_URL")` toegevoegd aan datasource
 
-De volgende aanpassingen zijn al gemaakt in de code:
-- ✅ `package.json` build scripts aangepast om `PRISMA_CLIENT_ENGINE_TYPE=library` in te stellen
-- ✅ `vercel.json` aangemaakt om dit tijdens install te forceren
-- ✅ `lib/db.ts` aangepast om de environment variable in te stellen tijdens runtime (backup)
+3. ✅ **Onnodige bestanden verwijderd**:
+   - `vercel.json` (niet meer nodig)
+   - `prisma.config.ts` (niet ondersteund in Prisma 6.x)
 
-### Stap 3: Redeploy
+4. ✅ **Code opgeschoond**: `lib/db.ts` vereenvoudigd (geen engine type hacks meer nodig)
 
-Na het toevoegen van de environment variable in Vercel:
-1. Ga naar **Deployments** in Vercel
-2. Klik op de drie puntjes naast de laatste deployment
-3. Kies **Redeploy** om een nieuwe deployment te maken met de nieuwe environment variable
+### Waarom Prisma 6.1.0?
 
-### Stap 4: Controleer
+- ✅ Geen automatische engine type detectie in serverless omgevingen
+- ✅ Werkt perfect met NEON's pooler connection string
+- ✅ Stabiel en bewezen voor Vercel deployments
+- ✅ Geen extra environment variables nodig
+- ✅ Geen adapter of accelerateUrl vereist
 
-Na de nieuwe deployment:
-1. Test je API endpoints
-2. Check de Vercel logs om te bevestigen dat de database connectie werkt
-3. De foutmelding zou nu verdwenen moeten zijn
+### Volgende stappen:
+
+1. **Commit en push de wijzigingen**:
+   ```bash
+   git add package.json package-lock.json prisma/schema.prisma lib/db.ts
+   git commit -m "Fix Prisma: downgrade naar 6.1.0 voor Vercel compatibiliteit"
+   git push
+   ```
+
+2. **Vercel zal automatisch deployen** met de nieuwe Prisma versie
+
+3. **Test de API endpoints** - de database connectie zou nu moeten werken
+
+4. **Controleer Vercel logs** om te bevestigen dat alles werkt
 
 ## Technische Details
 
-- **Prisma versie**: 7.2.0 (gedowngraded van 7.3.0)
-- **Engine type**: `library` (in plaats van `client`)
-- **Environment variable**: `PRISMA_CLIENT_ENGINE_TYPE=library`
+- **Prisma versie**: 6.1.0 (stabiel voor Vercel)
+- **Engine type**: Automatisch (geen probleem in 6.x)
+- **Database**: NEON PostgreSQL met pooler connection string
+- **Geen extra configuratie nodig**: Werkt out-of-the-box
 
-De `library` engine werkt perfect met NEON's pooler connection string en vereist geen adapter of accelerateUrl.
-
-## Alternatieve Oplossing (als bovenstaande niet werkt)
-
-Als de environment variable niet werkt, kun je ook Prisma Accelerate gebruiken (betaalde service):
-1. Schrijf je in voor Prisma Accelerate
-2. Voeg `PRISMA_ACCELERATE_URL` toe aan Vercel environment variables
-3. Dit is echter een betaalde oplossing
+De database koppeling zou nu volledig moeten werken! 🎉

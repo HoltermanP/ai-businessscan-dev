@@ -1,3 +1,0 @@
-{
-  "installCommand": "PRISMA_CLIENT_ENGINE_TYPE=library npm install"
-}
