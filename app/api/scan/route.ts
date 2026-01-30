@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeUrl, isValidUrl } from "@/lib/url-utils";
 import OpenAI from "openai";
-import { prisma } from "@/lib/db";
 
 // Initialiseer OpenAI client
 const openai = new OpenAI({
@@ -225,20 +224,8 @@ export async function POST(request: NextRequest) {
     // Genereer een unieke scan ID
     const scanId = `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Sla scan op in database
-    try {
-      await prisma.scan.create({
-        data: {
-          scanId,
-          url: normalizedUrl,
-          companyDescription: analysis.companyDescription,
-          aiOpportunities: analysis.aiOpportunities,
-        },
-      });
-    } catch (dbError) {
-      console.error("Database error:", dbError);
-      // Continue ook als database opslag faalt (voor backwards compatibility)
-    }
+    // Note: Database opslag is verwijderd omdat het Scan model niet bestaat in het schema
+    // Deze route wordt momenteel niet gebruikt in de applicatie
     
     return NextResponse.json({
       scanId,
