@@ -81,10 +81,13 @@ Geef een JSON response terug met het volgende formaat:
 }
 
 Belangrijk:
-- Geef exact 3 AI-kansen terug die specifiek relevant zijn voor dit bedrijf
-- Baseer je analyse op de daadwerkelijke website content
-- Maak de beschrijvingen concreet en specifiek voor dit bedrijf
-- Zorg dat de business cases realistisch zijn
+- Geef exact 3 AI-kansen terug die SPECIFIEK en DIRECT relevant zijn voor dit bedrijf
+- Baseer je analyse STRENG op de daadwerkelijke website content - alleen kansen die duidelijk aansluiten bij de bedrijfsactiviteiten
+- Vermijd generieke AI-kansen zoals "predictive maintenance", "supply chain optimization" of "fraud detection" tenzij deze expliciet relevant zijn voor dit specifieke bedrijf
+- Elke AI-kans moet een duidelijke, directe link hebben met de diensten, producten of processen die op de website worden genoemd
+- Als een AI-kans niet direct aansluit bij wat het bedrijf doet, geef deze dan NIET terug - het is beter om minder kansen te geven dan irrelevante kansen
+- Maak de beschrijvingen concreet en specifiek voor dit bedrijf - leg duidelijk uit WAAROM deze kans relevant is voor dit specifieke bedrijf
+- Zorg dat de business cases realistisch zijn en gebaseerd op de werkelijke bedrijfsactiviteiten
 - Geef alleen geldige JSON terug, geen extra tekst ervoor of erna`;
 
     // Roep OpenAI API aan
@@ -93,7 +96,7 @@ Belangrijk:
       messages: [
         {
           role: "system",
-          content: "Je bent een expert in bedrijfsanalyse en AI-implementaties. Je geeft altijd geldige JSON responses terug zonder extra tekst.",
+          content: "Je bent een expert in bedrijfsanalyse en AI-implementaties. Je geeft altijd geldige JSON responses terug zonder extra tekst. Je bent zeer kritisch en geeft alleen AI-kansen terug die DIRECT en SPECIFIEK relevant zijn voor het geanalyseerde bedrijf. Vermijd generieke of algemene AI-kansen die niet aansluiten bij de werkelijke bedrijfsactiviteiten.",
         },
         {
           role: "user",
