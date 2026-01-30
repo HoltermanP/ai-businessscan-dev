@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, Suspense, useRef } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, TrendingUp, Zap, Mail, ArrowLeft, CheckCircle2, Euro, Clock, Target } from "lucide-react";
-import { ScanProgress, type ScanStep } from "@/components/scan-progress";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface AIOpportunity {
@@ -35,59 +34,9 @@ function ResultatenContent() {
   const router = useRouter();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [scanStep, setScanStep] = useState<ScanStep>("initializing");
-  const [progress, setProgress] = useState(0);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isRequestingFullScan, setIsRequestingFullScan] = useState(false);
   const [email, setEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
-
-  // Simuleer progress tijdens het laden - alleen starten wanneer isLoading true wordt
-  useEffect(() => {
-    // Cleanup bij unmount of wanneer isLoading false wordt
-    if (!isLoading) {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-      return;
-    }
-
-    // Start progress alleen als deze nog niet loopt
-    if (progressIntervalRef.current) {
-      return;
-    }
-
-    // Reset progress bij start
-    setScanStep("initializing");
-    setProgress(0);
-
-    // Progress simulatie tijdens laden
-    progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 30) {
-          setScanStep("fetching");
-          return Math.min(30, prev + 3);
-        } else if (prev < 60) {
-          setScanStep("analyzing");
-          return Math.min(60, prev + 2);
-        } else if (prev < 90) {
-          setScanStep("generating");
-          return Math.min(90, prev + 1.5);
-        } else {
-          setScanStep("generating");
-          return prev;
-        }
-      });
-    }, 150);
-
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-    };
-  }, [isLoading]);
 
   useEffect(() => {
     const scanId = searchParams.get("scanId");
@@ -102,13 +51,6 @@ function ResultatenContent() {
   }, [searchParams, router]);
 
   const fetchScanResult = async (scanId: string) => {
-    // Reset progress voordat we starten
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-    setScanStep("initializing");
-    setProgress(0);
     setIsLoading(true);
     
     try {
@@ -117,11 +59,6 @@ function ResultatenContent() {
       
       if (response.ok) {
         const data = await response.json();
-        // Voltooi de progress
-        setScanStep("completed");
-        setProgress(100);
-        // Wacht kort zodat gebruiker de "completed" status ziet
-        await new Promise(resolve => setTimeout(resolve, 300));
         setScanResult(data);
       } else {
         // Fallback naar oude methode als scan niet in database staat
@@ -135,9 +72,6 @@ function ResultatenContent() {
           
           if (scanResponse.ok) {
             const scanData = await scanResponse.json();
-            setScanStep("completed");
-            setProgress(100);
-            await new Promise(resolve => setTimeout(resolve, 300));
             setScanResult(scanData);
           }
         }
@@ -179,12 +113,13 @@ function ResultatenContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="fixed top-4 right-4 z-50">
           <ThemeToggle />
         </div>
-        <div className="max-w-2xl w-full">
-          <ScanProgress currentStep={scanStep} progress={progress} />
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Resultaten laden...</p>
         </div>
       </div>
     );
@@ -394,12 +329,13 @@ export default function ResultatenPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="fixed top-4 right-4 z-50">
             <ThemeToggle />
           </div>
-          <div className="max-w-2xl w-full">
-            <ScanProgress currentStep="initializing" progress={0} />
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Laden...</p>
           </div>
         </div>
       }

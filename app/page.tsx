@@ -26,6 +26,9 @@ export default function Home() {
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
+      // Reset progress state wanneer niet meer aan het laden
+      setScanStep("initializing");
+      setProgress(0);
       return;
     }
 
@@ -41,6 +44,15 @@ export default function Home() {
     // Progress simulatie tijdens scan
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
+        // Stop als we al op 100% zijn
+        if (prev >= 100) {
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          return 100;
+        }
+
         if (prev < 20) {
           setScanStep("initializing");
           return Math.min(20, prev + 2);
@@ -54,6 +66,11 @@ export default function Home() {
           setScanStep("generating");
           return Math.min(95, prev + 1);
         } else {
+          // Bij 95%+ stoppen we de interval
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
           setScanStep("generating");
           return prev;
         }
@@ -93,6 +110,13 @@ export default function Home() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Stop de progress interval voordat we voltooien
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+          progressIntervalRef.current = null;
+        }
+        
         // Voltooi de progress
         setScanStep("completed");
         setProgress(100);
@@ -123,14 +147,14 @@ export default function Home() {
 
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 md:py-24">
-        {/* Scan Progress - alleen tonen tijdens scan */}
-        {isLoading && (
-          <div className="max-w-2xl mx-auto mb-8">
+        {/* Scan Progress - alleen tonen tijdens scan, verberg rest van content */}
+        {isLoading ? (
+          <div className="max-w-2xl mx-auto">
             <ScanProgress currentStep={scanStep} progress={progress} />
           </div>
-        )}
-
-        <div className="max-w-4xl mx-auto text-center mb-16">
+        ) : (
+          <>
+            <div className="max-w-4xl mx-auto text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 mb-6">
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-medium">AI-Powered Business Analyse</span>
@@ -283,6 +307,8 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
