@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, TrendingUp, Zap, Mail, ArrowLeft, CheckCircle2, Euro, Clock, Target } from "lucide-react";
+import { ScanProgress, type ScanStep } from "@/components/scan-progress";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface AIOpportunity {
   id: number;
@@ -33,9 +35,59 @@ function ResultatenContent() {
   const router = useRouter();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [scanStep, setScanStep] = useState<ScanStep>("initializing");
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isRequestingFullScan, setIsRequestingFullScan] = useState(false);
   const [email, setEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
+
+  // Simuleer progress tijdens het laden - alleen starten wanneer isLoading true wordt
+  useEffect(() => {
+    // Cleanup bij unmount of wanneer isLoading false wordt
+    if (!isLoading) {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Start progress alleen als deze nog niet loopt
+    if (progressIntervalRef.current) {
+      return;
+    }
+
+    // Reset progress bij start
+    setScanStep("initializing");
+    setProgress(0);
+
+    // Progress simulatie tijdens laden
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev < 30) {
+          setScanStep("fetching");
+          return Math.min(30, prev + 3);
+        } else if (prev < 60) {
+          setScanStep("analyzing");
+          return Math.min(60, prev + 2);
+        } else if (prev < 90) {
+          setScanStep("generating");
+          return Math.min(90, prev + 1.5);
+        } else {
+          setScanStep("generating");
+          return prev;
+        }
+      });
+    }, 150);
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, [isLoading]);
 
   useEffect(() => {
     const scanId = searchParams.get("scanId");
@@ -50,13 +102,26 @@ function ResultatenContent() {
   }, [searchParams, router]);
 
   const fetchScanResult = async (scanId: string) => {
+    // Reset progress voordat we starten
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setScanStep("initializing");
+    setProgress(0);
     setIsLoading(true);
+    
     try {
       // Haal scan op uit database
       const response = await fetch(`/api/scan/${scanId}`);
       
       if (response.ok) {
         const data = await response.json();
+        // Voltooi de progress
+        setScanStep("completed");
+        setProgress(100);
+        // Wacht kort zodat gebruiker de "completed" status ziet
+        await new Promise(resolve => setTimeout(resolve, 300));
         setScanResult(data);
       } else {
         // Fallback naar oude methode als scan niet in database staat
@@ -70,6 +135,9 @@ function ResultatenContent() {
           
           if (scanResponse.ok) {
             const scanData = await scanResponse.json();
+            setScanStep("completed");
+            setProgress(100);
+            await new Promise(resolve => setTimeout(resolve, 300));
             setScanResult(scanData);
           }
         }
@@ -111,10 +179,12 @@ function ResultatenContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Resultaten laden...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
+        <div className="max-w-2xl w-full">
+          <ScanProgress currentStep={scanStep} progress={progress} />
         </div>
       </div>
     );
@@ -122,7 +192,10 @@ function ResultatenContent() {
 
   if (!scanResult) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Scan niet gevonden</CardTitle>
@@ -136,7 +209,10 @@ function ResultatenContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -150,14 +226,14 @@ function ResultatenContent() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-700 mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 mb-4">
               <CheckCircle2 className="w-4 h-4" />
               <span className="text-sm font-medium">Scan Voltooid</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-50 mb-4">
               Je Bedrijfsanalyse is Klaar
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               Geanalyseerde website: <span className="font-semibold">{scanResult.url}</span>
             </p>
           </div>
@@ -171,13 +247,13 @@ function ResultatenContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 leading-relaxed">{scanResult.companyDescription}</p>
+              <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{scanResult.companyDescription}</p>
             </CardContent>
           </Card>
 
           {/* Top 3 AI Kansen */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-6 text-center">
               Top 3 AI Kansen voor Jouw Bedrijf
             </h2>
             <div className="space-y-6">
@@ -191,7 +267,7 @@ function ResultatenContent() {
                         </div>
                         <div>
                           <CardTitle className="text-2xl">{opportunity.title}</CardTitle>
-                          <CardDescription className="mt-1">{opportunity.description}</CardDescription>
+                          <CardDescription className="mt-1 text-gray-600 dark:text-gray-300">{opportunity.description}</CardDescription>
                         </div>
                       </div>
                     </div>
@@ -199,28 +275,28 @@ function ResultatenContent() {
                   <CardContent>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
-                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                          <Target className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-50">
+                          <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                           Businesscase
                         </h3>
                         <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                             <span className="font-medium">Impact:</span>
-                            <span className="px-2 py-1 rounded bg-blue-100 text-blue-700">
+                            <span className="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                               {opportunity.businessCase.potentialImpact}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                             <Euro className="w-4 h-4" />
                             <span className="font-medium">Geschatte ROI:</span>
                             <span>{opportunity.businessCase.estimatedROI}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                             <Euro className="w-4 h-4" />
                             <span className="font-medium">Implementatiekosten:</span>
                             <span>{opportunity.businessCase.implementationCost}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                             <Clock className="w-4 h-4" />
                             <span className="font-medium">Time to Value:</span>
                             <span>{opportunity.businessCase.timeToValue}</span>
@@ -228,14 +304,14 @@ function ResultatenContent() {
                         </div>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                          <Zap className="w-5 h-5 text-purple-600" />
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-50">
+                          <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                           Belangrijkste Voordelen
                         </h3>
                         <ul className="space-y-2">
                           {opportunity.businessCase.benefits.map((benefit, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm">
-                              <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
+                              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                               <span>{benefit}</span>
                             </li>
                           ))}
@@ -318,10 +394,12 @@ export default function ResultatenPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Laden...</p>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+          <div className="fixed top-4 right-4 z-50">
+            <ThemeToggle />
+          </div>
+          <div className="max-w-2xl w-full">
+            <ScanProgress currentStep="initializing" progress={0} />
           </div>
         </div>
       }

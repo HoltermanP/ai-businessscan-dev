@@ -1,17 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, TrendingUp, Zap, Mail, CheckCircle2, ArrowRight } from "lucide-react";
 import { normalizeUrl } from "@/lib/url-utils";
+import { ScanProgress, type ScanStep } from "@/components/scan-progress";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [scanStep, setScanStep] = useState<ScanStep>("initializing");
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  // Simuleer scan progress - alleen starten wanneer isLoading true wordt
+  useEffect(() => {
+    // Cleanup bij unmount of wanneer isLoading false wordt
+    if (!isLoading) {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Start progress alleen als deze nog niet loopt
+    if (progressIntervalRef.current) {
+      return;
+    }
+
+    // Reset progress bij start
+    setScanStep("initializing");
+    setProgress(0);
+
+    // Progress simulatie tijdens scan
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev < 20) {
+          setScanStep("initializing");
+          return Math.min(20, prev + 2);
+        } else if (prev < 40) {
+          setScanStep("fetching");
+          return Math.min(40, prev + 2);
+        } else if (prev < 70) {
+          setScanStep("analyzing");
+          return Math.min(70, prev + 1.5);
+        } else if (prev < 95) {
+          setScanStep("generating");
+          return Math.min(95, prev + 1);
+        } else {
+          setScanStep("generating");
+          return prev;
+        }
+      });
+    }, 200);
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, [isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +75,15 @@ export default function Home() {
     // Normaliseer URL (voeg https:// toe als nodig)
     const normalizedUrl = normalizeUrl(url.trim());
 
+    // Reset progress voordat we starten
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setScanStep("initializing");
+    setProgress(0);
     setIsLoading(true);
+
     try {
       const response = await fetch("/api/scan", {
         method: "POST",
@@ -30,38 +93,57 @@ export default function Home() {
 
       if (response.ok) {
         const data = await response.json();
+        // Voltooi de progress
+        setScanStep("completed");
+        setProgress(100);
+        
+        // Wacht kort zodat gebruiker de "completed" status ziet
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Sla genormaliseerde URL op in localStorage voor gebruik op resultaten pagina
         localStorage.setItem(`scan_${data.scanId}`, normalizedUrl);
         router.push(`/resultaten?scanId=${data.scanId}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
         alert(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        setIsLoading(false);
       }
     } catch (error) {
       alert("Er is een fout opgetreden. Probeer het opnieuw.");
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Theme Toggle */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 md:py-24">
+        {/* Scan Progress - alleen tonen tijdens scan */}
+        {isLoading && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <ScanProgress currentStep={scanStep} progress={progress} />
+          </div>
+        )}
+
         <div className="max-w-4xl mx-auto text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 mb-6">
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-medium">AI-Powered Business Analyse</span>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-50 mb-6 leading-tight">
             Ontdek de AI Kansen voor
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
               Jouw Bedrijf
             </span>
           </h1>
           
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
             Voer simpelweg de URL van je website in en ontvang binnen enkele minuten een 
             gedetailleerde analyse met de top 3 AI-kansen inclusief concrete businesscases.
           </p>
@@ -112,20 +194,20 @@ export default function Home() {
 
         {/* Features Section */}
         <div className="max-w-6xl mx-auto mt-24">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-50 mb-12">
             Wat krijg je in je scan?
           </h2>
           
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <CardTitle>Bedrijfsanalyse</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   Een uitgebreide beschrijving van je bedrijf op basis van je website, 
                   inclusief diensten, doelgroep en marktpositie.
                 </p>
@@ -134,13 +216,13 @@ export default function Home() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
-                  <Zap className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
+                  <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <CardTitle>Top 3 AI Kansen</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   Drie concrete AI-toepassingen die perfect passen bij jouw bedrijf, 
                   met uitleg waarom ze relevant zijn.
                 </p>
@@ -149,13 +231,13 @@ export default function Home() {
 
             <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <CardTitle>Businesscase</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   Globale inschatting van de potentiële impact, ROI en implementatiekosten 
                   voor elke AI-kans.
                 </p>
