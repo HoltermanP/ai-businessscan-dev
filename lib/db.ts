@@ -9,6 +9,11 @@ function getPrismaClient(): PrismaClient {
     return globalForPrisma.prisma
   }
 
+  // Controleer of DATABASE_URL is ingesteld
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set')
+  }
+
   const client = new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
