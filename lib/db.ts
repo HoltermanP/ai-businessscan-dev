@@ -4,12 +4,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function getPrismaClient(): PrismaClient {
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma
+  }
+
+  const client = new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 
-// In serverless omgevingen (zoals Vercel) is het belangrijk om de client te bewaren
-// om connection reuse te voorkomen tussen verschillende serverless functie invocaties
-if (!globalForPrisma.prisma) globalForPrisma.prisma = prisma
+  globalForPrisma.prisma = client
+  return client
+}
+
+// Lazy initialization: initialiseer alleen wanneer daadwerkelijk gebruikt
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient()
+    const value = (client as any)[prop]
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+})
