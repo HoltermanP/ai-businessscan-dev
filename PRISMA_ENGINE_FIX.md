@@ -8,7 +8,9 @@ Using engine type "client" requires either "adapter" or "accelerateUrl" to be pr
 
 ## Oplossing
 
-### Stap 1: Voeg Environment Variable toe in Vercel
+### Stap 1: Voeg Environment Variable toe in Vercel (BELANGRIJK!)
+
+**Dit is de belangrijkste stap!** De environment variable moet worden ingesteld VOORDAT `prisma generate` wordt uitgevoerd tijdens de build.
 
 1. Ga naar je Vercel project dashboard
 2. Ga naar **Settings** → **Environment Variables**
@@ -18,14 +20,21 @@ Using engine type "client" requires either "adapter" or "accelerateUrl" to be pr
    - **Environment**: Selecteer alle omgevingen (Production, Preview, Development)
 4. Klik op **Save**
 
-### Stap 2: Verwijder oude deployments (optioneel)
+### Stap 2: Code is al aangepast
 
-Als de fout blijft bestaan na het toevoegen van de environment variable:
+De volgende aanpassingen zijn al gemaakt in de code:
+- ✅ `package.json` build scripts aangepast om `PRISMA_CLIENT_ENGINE_TYPE=library` in te stellen
+- ✅ `vercel.json` aangemaakt om dit tijdens install te forceren
+- ✅ `lib/db.ts` aangepast om de environment variable in te stellen tijdens runtime (backup)
+
+### Stap 3: Redeploy
+
+Na het toevoegen van de environment variable in Vercel:
 1. Ga naar **Deployments** in Vercel
 2. Klik op de drie puntjes naast de laatste deployment
 3. Kies **Redeploy** om een nieuwe deployment te maken met de nieuwe environment variable
 
-### Stap 3: Controleer
+### Stap 4: Controleer
 
 Na de nieuwe deployment:
 1. Test je API endpoints

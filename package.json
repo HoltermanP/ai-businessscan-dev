@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "PRISMA_CLIENT_ENGINE_TYPE=library prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate",
+    "postinstall": "PRISMA_CLIENT_ENGINE_TYPE=library prisma generate",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:status": "prisma migrate status"
   },
