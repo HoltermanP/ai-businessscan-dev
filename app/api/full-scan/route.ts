@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { normalizeUrl, isValidUrl } from "@/lib/url-utils";
 import OpenAI from "openai";
 import { prisma } from "@/lib/db";
 
-// Initialiseer Resend (gebruik environment variable in productie)
-const resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder_key");
+// Initialiseer nodemailer transporter (gebruik environment variables in productie)
+const createTransporter = () => {
+  // Als SMTP configuratie niet is ingesteld, retourneer null
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_SECURE === "true", // true voor 465, false voor andere poorten
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+};
 
 // Initialiseer OpenAI client
 const openai = new OpenAI({
@@ -665,15 +680,19 @@ export async function POST(request: NextRequest) {
     // Genereer email HTML
     const emailHTML = generateEmailHTML(normalizedUrl, fullAnalysis);
 
-    // Verstuur email (alleen als RESEND_API_KEY is ingesteld)
+    // Verstuur email (alleen als SMTP configuratie is ingesteld)
     let emailSent = false;
     let emailSentAt: Date | null = null;
     
-    if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== "re_placeholder_key") {
+    const transporter = createTransporter();
+    
+    if (transporter) {
       try {
+        const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
+        
         // Verstuur email naar gebruiker
-        await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+        await transporter.sendMail({
+          from: fromEmail,
           to: email,
           subject: `Uitgebreide AI Business Quickscan - ${url}`,
           html: emailHTML,
@@ -685,8 +704,8 @@ export async function POST(request: NextRequest) {
           `<h1>Uitgebreide AI Business Quickscan</h1><p style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin-bottom: 20px;"><strong>Interne kopie:</strong> Deze analyse is verzonden naar ${email}</p>`
         );
         
-        await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+        await transporter.sendMail({
+          from: fromEmail,
           to: "businessscan@ai-group.nl",
           subject: `[Interne Kopie] Uitgebreide AI Business Quickscan - ${url} (voor ${email})`,
           html: internalEmailHTML,
@@ -699,7 +718,7 @@ export async function POST(request: NextRequest) {
         // Continue ook als email verzending faalt
       }
     } else {
-      console.log("RESEND_API_KEY niet ingesteld, email wordt niet verzonden");
+      console.log("SMTP configuratie niet ingesteld, email wordt niet verzonden");
       console.log("Email zou worden verzonden naar:", email);
       console.log("Interne kopie zou worden verzonden naar: businessscan@ai-group.nl");
     }
