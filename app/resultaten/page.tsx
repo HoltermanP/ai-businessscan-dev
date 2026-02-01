@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, TrendingUp, Zap, Mail, ArrowLeft, CheckCircle2, Euro, Clock, Target } from "lucide-react";
+import { Sparkles, TrendingUp, Zap, Mail, ArrowLeft, CheckCircle2, Euro, Clock, Target, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface AIOpportunity {
@@ -37,8 +37,26 @@ function ResultatenContent() {
   const [quickscanResult, setQuickscanResult] = useState<QuickscanResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRequestingFullQuickscan, setIsRequestingFullQuickscan] = useState(false);
+  const [isScanComplete, setIsScanComplete] = useState(false);
   const [email, setEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
+
+  // Voeg beforeunload event listener toe wanneer uitgebreide quickscan wordt gemaakt
+  useEffect(() => {
+    if (isRequestingFullQuickscan) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = "De analyse wordt nog gemaakt. Weet je zeker dat je deze pagina wilt verlaten?";
+        return e.returnValue;
+      };
+
+      window.addEventListener("beforeunload", handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [isRequestingFullQuickscan]);
 
   useEffect(() => {
     const quickscanId = searchParams.get("quickscanId");
@@ -89,6 +107,7 @@ function ResultatenContent() {
     if (!email || !quickscanResult) return;
 
     setIsRequestingFullQuickscan(true);
+    setIsScanComplete(false);
     try {
       const response = await fetch("/api/full-scan", {
         method: "POST",
@@ -101,15 +120,21 @@ function ResultatenContent() {
       });
 
       if (response.ok) {
-        alert("Uitgebreide quickscan aangevraagd! Je ontvangt binnenkort een email met de volledige analyse.");
+        setIsScanComplete(true);
         setShowEmailForm(false);
+        // Sluit de modal na 3 seconden automatisch
+        setTimeout(() => {
+          setIsRequestingFullQuickscan(false);
+          setIsScanComplete(false);
+        }, 3000);
       } else {
-        alert("Er is een fout opgetreden. Probeer het opnieuw.");
+        setIsRequestingFullQuickscan(false);
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
       }
     } catch (error) {
-      alert("Er is een fout opgetreden. Probeer het opnieuw.");
-    } finally {
       setIsRequestingFullQuickscan(false);
+      alert("Er is een fout opgetreden. Probeer het opnieuw.");
     }
   };
 
@@ -150,6 +175,53 @@ function ResultatenContent() {
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
+      
+      {/* Melding tijdens uitgebreide quickscan */}
+      {isRequestingFullQuickscan && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full shadow-2xl border-2 border-yellow-400 dark:border-yellow-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                {isScanComplete ? (
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                ) : (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                )}
+                {isScanComplete ? "Analyse voltooid" : "Analyse wordt gemaakt..."}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isScanComplete ? (
+                <>
+                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <p className="text-green-800 dark:text-green-200 font-semibold text-center">
+                      ✓ De uitgebreide analyse is gereed
+                    </p>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 text-center">
+                    De mail met de uitgebreide analyse wordt nu verzonden naar <span className="font-semibold">{email}</span>.
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                    Controleer je inbox voor de volledige analyse.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <p className="text-yellow-800 dark:text-yellow-200 font-semibold text-center">
+                      ⚠️ Sluit dit tabblad niet af, de analyse wordt gemaakt
+                    </p>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-300 text-center">
+                    Dit kan enkele minuten duren. Je ontvangt een email zodra de analyse klaar is.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -235,7 +307,7 @@ function ResultatenContent() {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                             <Clock className="w-4 h-4" />
-                            <span className="font-medium">Time to Value:</span>
+                            <span className="font-medium">Tijd tot Waarde:</span>
                             <span>{opportunity.businessCase.timeToValue}</span>
                           </div>
                           {opportunity.businessCase.rationale && (
