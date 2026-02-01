@@ -11,29 +11,31 @@ datasource db {
 }
 
 model Quickscan {
-  id                String   @id @default(cuid())
-  quickscanId       String   @unique
-  url               String
-  companyDescription String @db.Text
-  aiOpportunities   Json
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  id                 String   @id @default(cuid())
+  quickscanId        String   @unique
+  url                String
+  companyDescription String   @db.Text
+  aiOpportunities    Json
+  ipAddress          String? // Voor limiet tracking
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
   @@index([quickscanId])
   @@index([createdAt])
+  @@index([ipAddress])
 }
 
 model FullQuickscan {
-  id                String   @id @default(cuid())
-  quickscanId       String   @unique
-  email             String
-  url               String
-  fullAnalysis      Json
-  emailSent         Boolean  @default(false)
-  emailSentAt       DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  id           String    @id @default(cuid())
+  quickscanId  String    @unique
+  email        String
+  url          String
+  fullAnalysis Json
+  emailSent    Boolean   @default(false)
+  emailSentAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
   @@index([quickscanId])
   @@index([email])
 }

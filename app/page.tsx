@@ -16,8 +16,31 @@ export default function Home() {
   const [quickscanStep, setQuickscanStep] = useState<QuickscanStep>("initializing");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [scanCount, setScanCount] = useState<{ current: number; max: number } | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  // Haal scan count op bij mount en na elke succesvolle scan
+  useEffect(() => {
+    const fetchScanCount = async () => {
+      try {
+        const response = await fetch("/api/quickscan/limit");
+        if (response.ok) {
+          const data = await response.json();
+          setScanCount({ current: data.currentCount || 0, max: data.maxLimit || 10 });
+        } else {
+          // Als de API faalt, toon 0 als fallback
+          setScanCount({ current: 0, max: 10 });
+        }
+      } catch (error) {
+        console.error("Error fetching scan count:", error);
+        // Fallback bij error
+        setScanCount({ current: 0, max: 10 });
+      }
+    };
+    
+    fetchScanCount();
+  }, []);
 
   // Simuleer scan progress - alleen starten wanneer isLoading true wordt
   useEffect(() => {
@@ -115,6 +138,11 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         
+        // Update scan count als deze in de response zit
+        if (data.scanCount) {
+          setScanCount({ current: data.scanCount.current, max: data.scanCount.max });
+        }
+        
         // Stop de progress interval voordat we voltooien
         if (progressIntervalRef.current) {
           clearInterval(progressIntervalRef.current);
@@ -133,7 +161,16 @@ export default function Home() {
         router.push(`/resultaten?quickscanId=${data.quickscanId}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        
+        // Speciale behandeling voor limiet bereikt
+        if (response.status === 429 && errorData.limitReached) {
+          setError(
+            errorData.message || 
+            "Je hebt je limiet bereikt. Stuur een email naar businessscan@ai-group.nl voor meer gratis credits."
+          );
+        } else {
+          setError(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        }
         setIsLoading(false);
       }
     } catch (error) {
@@ -183,6 +220,11 @@ export default function Home() {
               <CardDescription>
                 Voer de URL van je bedrijfswebsite in om te beginnen
               </CardDescription>
+              <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">
+                  {scanCount ? `${scanCount.current} / ${scanCount.max}` : "0 / 10"} gratis quickscans gebruikt
+                </span>
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -220,9 +262,17 @@ export default function Home() {
                 </div>
                 {error && (
                   <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                    <p className="text-red-800 dark:text-red-200 text-sm font-medium">
+                    <p className="text-red-800 dark:text-red-200 text-sm font-medium mb-2">
                       ⚠️ {error}
                     </p>
+                    {error.includes("businessscan@ai-group.nl") && (
+                      <a 
+                        href="mailto:businessscan@ai-group.nl?subject=Verzoek voor meer gratis credits"
+                        className="text-red-700 dark:text-red-300 text-sm underline hover:text-red-900 dark:hover:text-red-100"
+                      >
+                        Klik hier om direct een email te sturen
+                      </a>
+                    )}
                   </div>
                 )}
               </form>
