@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeUrl, isValidUrl, isWebsiteReachable } from "@/lib/url-utils";
+import { getClientIp } from "@/lib/ip-utils";
 import OpenAI from "openai";
 import { prisma } from "@/lib/db";
 
@@ -243,6 +244,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Haal IP-adres op voor limiet tracking
+    const ipAddress = getClientIp(request);
+    
+    // Controleer limiet voor quickscans (max 10 totaal per IP)
+    if (ipAddress) {
+      const quickscanCount = await prisma.quickscan.count({
+        where: {
+          ipAddress: ipAddress,
+        },
+      });
+
+      if (quickscanCount >= 10) {
+        return NextResponse.json(
+          { 
+            error: "Limiet bereikt",
+            message: "Je hebt je limiet van 10 gratis quickscans bereikt. Wil je meer gratis credits? Stuur een email naar businessscan@ai-group.nl met je verzoek.",
+            limitReached: true,
+            limitType: "quickscan",
+            maxLimit: 10,
+            currentCount: quickscanCount
+          },
+          { status: 429 } // 429 = Too Many Requests
+        );
+      }
+    }
+
     // Normaliseer URL (voeg https:// toe als nodig)
     const normalizedUrl = normalizeUrl(url);
 
@@ -277,6 +304,7 @@ export async function POST(request: NextRequest) {
           url: normalizedUrl,
           companyDescription: analysis.companyDescription,
           aiOpportunities: analysis.aiOpportunities,
+          ipAddress, // Sla IP-adres op voor limiet tracking
         },
       });
     } catch (dbError) {
@@ -287,11 +315,26 @@ export async function POST(request: NextRequest) {
       // Maar log wel de error voor debugging
     }
     
+    // Haal het aantal quickscans op voor deze IP (na het opslaan)
+    let currentCount = 0;
+    if (ipAddress) {
+      currentCount = await prisma.quickscan.count({
+        where: {
+          ipAddress: ipAddress,
+        },
+      });
+    }
+
     return NextResponse.json({
       quickscanId,
       url: normalizedUrl,
       ...analysis,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      scanCount: {
+        current: currentCount,
+        max: 10,
+        limitType: "quickscan"
+      }
     });
   } catch (error) {
     console.error("Quickscan error:", error);

@@ -724,6 +724,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normaliseer email (lowercase en trim)
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Controleer limiet voor uitgebreide scans (max 5 totaal per email)
+    const fullScanCount = await prisma.fullQuickscan.count({
+      where: {
+        email: normalizedEmail,
+      },
+    });
+
+    if (fullScanCount >= 5) {
+      return NextResponse.json(
+        { 
+          error: "Limiet bereikt",
+          message: "Je hebt je limiet van 5 gratis uitgebreide scans bereikt. Wil je meer gratis credits? Stuur een email naar businessscan@ai-group.nl met je verzoek.",
+          limitReached: true,
+          limitType: "fullscan",
+          maxLimit: 5,
+          currentCount: fullScanCount
+        },
+        { status: 429 } // 429 = Too Many Requests
+      );
+    }
+
     // Normaliseer URL (voeg https:// toe als nodig)
     const normalizedUrl = normalizeUrl(url);
     
@@ -809,7 +833,7 @@ export async function POST(request: NextRequest) {
       const savedQuickscan = await prisma.fullQuickscan.create({
         data: {
           quickscanId: savedQuickscanId,
-          email, // Emailadres van de aanvrager wordt hier opgeslagen
+          email: normalizedEmail, // Genormaliseerd emailadres van de aanvrager wordt hier opgeslagen
           url: normalizedUrl,
           fullAnalysis: fullAnalysis as any,
           emailSent,
@@ -817,6 +841,24 @@ export async function POST(request: NextRequest) {
         },
       });
       console.log(`Uitgebreide quickscan opgeslagen in database met email: ${email}, quickscanId: ${savedQuickscan.quickscanId}`);
+      
+      // Haal het aantal uitgebreide scans op voor dit email (na het opslaan)
+      const fullScanCount = await prisma.fullQuickscan.count({
+        where: {
+          email: normalizedEmail,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Uitgebreide quickscan is gegenereerd en verzonden",
+        quickscanId: savedQuickscanId,
+        scanCount: {
+          current: fullScanCount,
+          max: 5,
+          limitType: "fullscan"
+        }
+      });
     } catch (dbError) {
       console.error("Database error bij opslaan uitgebreide quickscan:", dbError);
       const errorMessage = dbError instanceof Error ? dbError.message : "Onbekende database fout";
@@ -840,12 +882,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      message: "Uitgebreide quickscan is gegenereerd en verzonden",
-      quickscanId: savedQuickscanId,
-    });
   } catch (error) {
     console.error("Full quickscan error:", error);
     const errorMessage = error instanceof Error ? error.message : "Onbekende fout";

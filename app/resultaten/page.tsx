@@ -41,6 +41,7 @@ function ResultatenContent() {
   const [email, setEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanCount, setScanCount] = useState<{ current: number; max: number } | null>(null);
 
   // Voeg beforeunload event listener toe wanneer uitgebreide quickscan wordt gemaakt
   useEffect(() => {
@@ -70,6 +71,35 @@ function ResultatenContent() {
     // Voor nu gebruiken we de quickscanId om de data opnieuw te genereren
     fetchQuickscanResult(quickscanId);
   }, [searchParams, router]);
+
+  // Haal scan count op wanneer email wordt ingevoerd
+  useEffect(() => {
+    const fetchScanCount = async () => {
+      if (!email || !email.includes("@")) {
+        setScanCount({ current: 0, max: 5 });
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/full-scan/limit?email=${encodeURIComponent(email)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setScanCount({ current: data.currentCount || 0, max: data.maxLimit || 5 });
+        } else {
+          // Fallback bij error
+          setScanCount({ current: 0, max: 5 });
+        }
+      } catch (error) {
+        console.error("Error fetching scan count:", error);
+        // Fallback bij error
+        setScanCount({ current: 0, max: 5 });
+      }
+    };
+
+    // Debounce de fetch om niet bij elke toetsaanslag te fetchen
+    const timeoutId = setTimeout(fetchScanCount, 500);
+    return () => clearTimeout(timeoutId);
+  }, [email]);
 
   const fetchQuickscanResult = async (quickscanId: string) => {
     setIsLoading(true);
@@ -122,6 +152,13 @@ function ResultatenContent() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        
+        // Update scan count als deze in de response zit
+        if (data.scanCount) {
+          setScanCount({ current: data.scanCount.current, max: data.scanCount.max });
+        }
+        
         setIsScanComplete(true);
         setShowEmailForm(false);
         // Sluit de modal na 3 seconden automatisch
@@ -132,7 +169,16 @@ function ResultatenContent() {
       } else {
         setIsRequestingFullQuickscan(false);
         const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        
+        // Speciale behandeling voor limiet bereikt
+        if (response.status === 429 && errorData.limitReached) {
+          setError(
+            errorData.message || 
+            "Je hebt je limiet bereikt. Stuur een email naar businessscan@ai-group.nl voor meer gratis credits."
+          );
+        } else {
+          setError(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        }
       }
     } catch (error) {
       setIsRequestingFullQuickscan(false);
@@ -395,12 +441,25 @@ function ResultatenContent() {
                       className="w-full"
                       required
                     />
+                    <div className="mt-2 text-sm text-blue-100">
+                      <span className="font-medium">
+                        {scanCount ? `${scanCount.current} / ${scanCount.max}` : "0 / 5"} gratis uitgebreide scans gebruikt
+                      </span>
+                    </div>
                   </div>
                   {error && (
                     <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                      <p className="text-red-800 dark:text-red-200 text-sm font-medium">
+                      <p className="text-red-800 dark:text-red-200 text-sm font-medium mb-2">
                         ⚠️ {error}
                       </p>
+                      {error.includes("businessscan@ai-group.nl") && (
+                        <a 
+                          href="mailto:businessscan@ai-group.nl?subject=Verzoek voor meer gratis credits"
+                          className="text-red-700 dark:text-red-300 text-sm underline hover:text-red-900 dark:hover:text-red-100"
+                        >
+                          Klik hier om direct een email te sturen
+                        </a>
+                      )}
                     </div>
                   )}
                   <div className="flex gap-2">
