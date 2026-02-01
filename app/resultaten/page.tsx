@@ -40,6 +40,7 @@ function ResultatenContent() {
   const [isScanComplete, setIsScanComplete] = useState(false);
   const [email, setEmail] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Voeg beforeunload event listener toe wanneer uitgebreide quickscan wordt gemaakt
   useEffect(() => {
@@ -108,6 +109,7 @@ function ResultatenContent() {
 
     setIsRequestingFullQuickscan(true);
     setIsScanComplete(false);
+    setError(null);
     try {
       const response = await fetch("/api/full-scan", {
         method: "POST",
@@ -130,11 +132,11 @@ function ResultatenContent() {
       } else {
         setIsRequestingFullQuickscan(false);
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        setError(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
       }
     } catch (error) {
       setIsRequestingFullQuickscan(false);
-      alert("Er is een fout opgetreden. Probeer het opnieuw.");
+      setError("Er is een fout opgetreden. Probeer het opnieuw.");
     }
   };
 
@@ -385,12 +387,22 @@ function ResultatenContent() {
                     <Input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setError(null); // Clear error when user types
+                      }}
                       placeholder="jouw@email.nl"
                       className="w-full"
                       required
                     />
                   </div>
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <p className="text-red-800 dark:text-red-200 text-sm font-medium">
+                        ⚠️ {error}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Button
                       size="lg"
@@ -404,7 +416,10 @@ function ResultatenContent() {
                     <Button
                       size="lg"
                       variant="outline"
-                      onClick={() => setShowEmailForm(false)}
+                      onClick={() => {
+                        setShowEmailForm(false);
+                        setError(null);
+                      }}
                       className="border-white text-white hover:bg-white/10"
                     >
                       Annuleren

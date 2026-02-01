@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeUrl, isValidUrl } from "@/lib/url-utils";
+import { normalizeUrl, isValidUrl, isWebsiteReachable } from "@/lib/url-utils";
 import OpenAI from "openai";
 import { prisma } from "@/lib/db";
 
@@ -250,6 +250,15 @@ export async function POST(request: NextRequest) {
     if (!isValidUrl(normalizedUrl)) {
       return NextResponse.json(
         { error: "Ongeldige URL" },
+        { status: 400 }
+      );
+    }
+
+    // Controleer of de website bereikbaar is
+    const reachabilityCheck = await isWebsiteReachable(normalizedUrl);
+    if (!reachabilityCheck.reachable) {
+      return NextResponse.json(
+        { error: reachabilityCheck.error || "Website is niet bereikbaar. Controleer of de URL correct is en of de website online is." },
         { status: 400 }
       );
     }

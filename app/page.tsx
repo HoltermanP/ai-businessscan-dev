@@ -15,6 +15,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [quickscanStep, setQuickscanStep] = useState<QuickscanStep>("initializing");
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
@@ -89,6 +90,9 @@ export default function Home() {
     e.preventDefault();
     if (!url.trim()) return;
 
+    // Reset error
+    setError(null);
+
     // Normaliseer URL (voeg https:// toe als nodig)
     const normalizedUrl = normalizeUrl(url.trim());
 
@@ -129,11 +133,11 @@ export default function Home() {
         router.push(`/resultaten?quickscanId=${data.quickscanId}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
+        setError(errorData.error || "Er is een fout opgetreden. Probeer het opnieuw.");
         setIsLoading(false);
       }
     } catch (error) {
-      alert("Er is een fout opgetreden. Probeer het opnieuw.");
+      setError("Er is een fout opgetreden. Probeer het opnieuw.");
       setIsLoading(false);
     }
   };
@@ -187,7 +191,10 @@ export default function Home() {
                     type="text"
                     placeholder="jouwbedrijf.nl of https://jouwbedrijf.nl"
                     value={url}
-                    onChange={(e) => setUrl(e.target.value)}
+                    onChange={(e) => {
+                      setUrl(e.target.value);
+                      setError(null); // Clear error when user types
+                    }}
                     className="flex-1 text-lg h-12"
                     disabled={isLoading}
                     required
@@ -211,6 +218,13 @@ export default function Home() {
                     )}
                   </Button>
                 </div>
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <p className="text-red-800 dark:text-red-200 text-sm font-medium">
+                      ⚠️ {error}
+                    </p>
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>
