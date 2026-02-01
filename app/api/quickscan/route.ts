@@ -62,20 +62,20 @@ Geef een JSON response terug met het volgende formaat:
   "aiOpportunities": [
     {
       "id": 1,
-      "title": "Titel van de AI-kans",
-      "description": "Uitgebreide beschrijving waarom deze AI-kans relevant is voor dit specifieke bedrijf (minimaal 100 woorden)",
+      "title": "Titel van de AI-kans - specifiek voor dit bedrijf",
+      "description": "KORTE maar BEDRIJFSSPECIFIEKE beschrijving (60-80 woorden) die direct uitlegt waarom deze AI-kans relevant is voor dit specifieke bedrijf. Verwijs naar concrete diensten, producten of processen die op de website worden genoemd. Wees concreet en specifiek - geen generieke beschrijvingen.",
       "businessCase": {
         "potentialImpact": "Laag/Gemiddeld/Hoog/Zeer Hoog",
-        "estimatedROI": "bijv. 200-300%",
+        "estimatedROI": "bijv. 50-120%",
         "implementationCost": "bijv. €15.000 - €25.000",
         "timeToValue": "bijv. 2-3 maanden",
         "benefits": [
-          "Concrete benefit 1",
-          "Concrete benefit 2",
-          "Concrete benefit 3",
-          "Concrete benefit 4"
+          "Concrete benefit 1 - specifiek voor dit bedrijf",
+          "Concrete benefit 2 - specifiek voor dit bedrijf",
+          "Concrete benefit 3 - specifiek voor dit bedrijf",
+          "Concrete benefit 4 - specifiek voor dit bedrijf"
         ],
-        "rationale": "Een duidelijke onderbouwing (minimaal 80 woorden) die uitlegt waarom deze ROI realistisch is, gebaseerd op concrete voorbeelden uit de bedrijfsactiviteiten. Leg uit hoe de besparingen worden gerealiseerd (bijv. tijdsbesparing, kostenreductie, omzetgroei) en waarom de investering de moeite waard is. Wees realistisch en concreet, maar wel aanlokkend.",
+        "rationale": "Een duidelijke onderbouwing (minimaal 80 woorden) die uitlegt waarom deze ROI realistisch is, gebaseerd op concrete voorbeelden uit de bedrijfsactiviteiten. Leg uit hoe de besparingen worden gerealiseerd (bijv. tijdsbesparing, kostenreductie, omzetgroei) en waarom de investering de moeite waard is. Verwijs naar specifieke aspecten van dit bedrijf zoals genoemd op de website. Wees REALISTISCH en CONSERVATIEF - geen overdreven optimistische schattingen. Focus op concrete, haalbare besparingen en voordelen.",
         "keyMetrics": [
           "Concrete meetbare metric 1 (bijv. '40% reductie in handmatige taken')",
           "Concrete meetbare metric 2 (bijv. '€25.000 besparing per jaar')",
@@ -86,17 +86,20 @@ Geef een JSON response terug met het volgende formaat:
   ]
 }
 
-Belangrijk:
-- Geef exact 3 AI-kansen terug die SPECIFIEK en DIRECT relevant zijn voor dit bedrijf
+KRITIEKE INSTRUCTIES VOOR BEDRIJFSSPECIFIEKE OPLOSSINGEN:
+- Geef exact 3 AI-kansen terug die EXTREEM SPECIFIEK en DIRECT relevant zijn voor dit bedrijf
 - Baseer je analyse STRENG op de daadwerkelijke website content - alleen kansen die duidelijk aansluiten bij de bedrijfsactiviteiten
 - Vermijd generieke AI-kansen zoals "predictive maintenance", "supply chain optimization" of "fraud detection" tenzij deze expliciet relevant zijn voor dit specifieke bedrijf
 - Elke AI-kans moet een duidelijke, directe link hebben met de diensten, producten of processen die op de website worden genoemd
 - Als een AI-kans niet direct aansluit bij wat het bedrijf doet, geef deze dan NIET terug - het is beter om minder kansen te geven dan irrelevante kansen
-- Maak de beschrijvingen concreet en specifiek voor dit bedrijf - leg duidelijk uit WAAROM deze kans relevant is voor dit specifieke bedrijf
-- Zorg dat de business cases realistisch zijn en gebaseerd op de werkelijke bedrijfsactiviteiten
+- Maak de beschrijvingen EXTREEM concreet en specifiek voor dit bedrijf - verwijs naar specifieke diensten, producten, processen of doelgroepen zoals genoemd op de website
+- Gebruik de bedrijfsnaam, diensten en producten uit de website content in je beschrijvingen
+- Zorg dat de business cases REALISTISCH en CONSERVATIEF zijn - ROI moet tussen 50-120% liggen, niet hoger
 - Voor elke businesscase: geef een duidelijke onderbouwing (rationale) die uitlegt waarom de ROI schatting realistisch is, gebaseerd op concrete voorbeelden uit de bedrijfsactiviteiten
-- De rationale moet concreet zijn maar niet overdreven - focus op realistische besparingen en voordelen die aansluiten bij het bedrijf
-- Voeg keyMetrics toe met 3 concrete, meetbare metrics die de waarde van de AI-kans ondersteunen
+- De rationale moet concreet zijn maar NIET overdreven - focus op realistische, haalbare besparingen en voordelen die aansluiten bij het specifieke bedrijf
+- Wees CONSERVATIEF met ROI schattingen - 50-120% is realistisch, niet 200-400%
+- Voeg keyMetrics toe met 3 concrete, meetbare metrics die de waarde van de AI-kans ondersteunen en specifiek zijn voor dit bedrijf
+- De beschrijving moet KORT zijn (60-80 woorden) maar wel BEDRIJFSSPECIFIEK - geen generieke tekst
 - Geef alleen geldige JSON terug, geen extra tekst ervoor of erna`;
 
     // Roep OpenAI API aan
@@ -105,7 +108,7 @@ Belangrijk:
       messages: [
         {
           role: "system",
-          content: "Je bent een expert in bedrijfsanalyse en AI-implementaties. Je geeft altijd geldige JSON responses terug zonder extra tekst. Je bent zeer kritisch en geeft alleen AI-kansen terug die DIRECT en SPECIFIEK relevant zijn voor het geanalyseerde bedrijf. Vermijd generieke of algemene AI-kansen die niet aansluiten bij de werkelijke bedrijfsactiviteiten.",
+          content: "Je bent een expert in bedrijfsanalyse en AI-implementaties. Je geeft altijd geldige JSON responses terug zonder extra tekst. Je bent zeer kritisch en geeft alleen AI-kansen terug die DIRECT en EXTREEM SPECIFIEK relevant zijn voor het geanalyseerde bedrijf. Vermijd generieke of algemene AI-kansen die niet aansluiten bij de werkelijke bedrijfsactiviteiten. BELANGRIJK: ROI schattingen moeten REALISTISCH en CONSERVATIEF zijn (50-120%, niet hoger). Alle beschrijvingen moeten concreet verwijzen naar specifieke diensten, producten of processen zoals genoemd op de website.",
         },
         {
           role: "user",
@@ -133,7 +136,7 @@ Belangrijk:
         description: opp.description || "",
         businessCase: {
           potentialImpact: opp.businessCase?.potentialImpact || "Gemiddeld",
-          estimatedROI: opp.businessCase?.estimatedROI || "150-250%",
+          estimatedROI: opp.businessCase?.estimatedROI || "50-120%",
           implementationCost: opp.businessCase?.implementationCost || "€10.000 - €20.000",
           timeToValue: opp.businessCase?.timeToValue || "2-3 maanden",
           benefits: opp.businessCase?.benefits || [],
@@ -158,20 +161,20 @@ Belangrijk:
           description: "Implementeer een AI-gestuurde chatbot die 24/7 klantvragen kan beantwoorden, reserveringen kan verwerken en algemene informatie kan verstrekken.",
           businessCase: {
             potentialImpact: "Hoog",
-            estimatedROI: "200-300%",
+            estimatedROI: "60-100%",
             implementationCost: "€15.000 - €25.000",
             timeToValue: "2-3 maanden",
             benefits: [
               "24/7 beschikbaarheid voor klanten",
-              "Vermindering van 40-60% van standaard klantvragen",
+              "Vermindering van 30-50% van standaard klantvragen",
               "Verbeterde klanttevredenheid door snellere respons",
               "Kostenbesparing op klantenservice personeel"
             ],
-            rationale: "De ROI van 200-300% is gebaseerd op de combinatie van kostenbesparingen door verminderde klantenservice-uren en verhoogde klanttevredenheid die leidt tot meer herhaalaankopen. Een chatbot kan gemiddeld 40-60% van de standaardvragen afhandelen, wat resulteert in een besparing van ongeveer 20-30 uur per week aan klantenservicetijd. Bij een gemiddeld uurtarief van €50-€75 voor klantenservicemedewerkers, levert dit een jaarlijkse besparing op van €50.000-€75.000. De investering van €15.000-€25.000 wordt daardoor binnen 3-6 maanden terugverdiend.",
+            rationale: "De ROI van 60-100% is gebaseerd op realistische kostenbesparingen door verminderde klantenservice-uren. Een chatbot kan gemiddeld 30-50% van de standaardvragen afhandelen, wat resulteert in een besparing van ongeveer 10-15 uur per week aan klantenservicetijd. Bij een gemiddeld uurtarief van €40-€60 voor klantenservicemedewerkers, levert dit een jaarlijkse besparing op van €20.000-€35.000. De investering van €15.000-€25.000 wordt daardoor binnen 6-12 maanden terugverdiend.",
             keyMetrics: [
-              "40-60% reductie in handmatige klantvragen",
-              "€50.000-€75.000 jaarlijkse kostenbesparing",
-              "20-30 uur per week tijdsbesparing voor klantenservice"
+              "30-50% reductie in handmatige klantvragen",
+              "€20.000-€35.000 jaarlijkse kostenbesparing",
+              "10-15 uur per week tijdsbesparing voor klantenservice"
             ]
           }
         },
@@ -180,21 +183,21 @@ Belangrijk:
           title: "Predictive Analytics voor Verkoop",
           description: "Gebruik AI om verkooppatronen te analyseren en voorspellingen te doen over toekomstige vraag.",
           businessCase: {
-            potentialImpact: "Zeer Hoog",
-            estimatedROI: "250-400%",
+            potentialImpact: "Hoog",
+            estimatedROI: "70-110%",
             implementationCost: "€20.000 - €35.000",
             timeToValue: "3-4 maanden",
             benefits: [
-              "Optimalisatie van voorraadniveaus (20-30% reductie)",
+              "Optimalisatie van voorraadniveaus (15-25% reductie)",
               "Verhoogde verkoop door betere productaanbevelingen",
               "Verbeterde cashflow door slimmer voorraadbeheer",
               "Data-gedreven besluitvorming"
             ],
-            rationale: "De ROI van 250-400% wordt gerealiseerd door een combinatie van voorraadoptimalisatie en omzetgroei. Door betere voorspellingen van vraagpatronen kan de voorraad met 20-30% worden gereduceerd, wat leidt tot lagere voorraadkosten en minder verouderde producten. Tegelijkertijd kunnen gepersonaliseerde aanbevelingen de omzet met 10-15% verhogen. Voor een bedrijf met een jaarlijkse omzet van €500.000-€1.000.000 betekent dit een extra omzet van €50.000-€150.000 per jaar, plus besparingen op voorraadkosten van €20.000-€40.000. De totale waarde van €70.000-€190.000 per jaar rechtvaardigt de investering ruimschoots.",
+            rationale: "De ROI van 70-110% wordt gerealiseerd door een combinatie van voorraadoptimalisatie en omzetgroei. Door betere voorspellingen van vraagpatronen kan de voorraad met 15-25% worden gereduceerd, wat leidt tot lagere voorraadkosten. Tegelijkertijd kunnen gepersonaliseerde aanbevelingen de omzet met 5-10% verhogen. Voor een bedrijf met een jaarlijkse omzet van €500.000-€1.000.000 betekent dit een extra omzet van €25.000-€75.000 per jaar, plus besparingen op voorraadkosten van €15.000-€30.000. De totale waarde van €40.000-€105.000 per jaar rechtvaardigt de investering.",
             keyMetrics: [
-              "20-30% reductie in voorraadniveaus",
-              "10-15% omzetgroei door betere aanbevelingen",
-              "€70.000-€190.000 totale jaarlijkse waarde"
+              "15-25% reductie in voorraadniveaus",
+              "5-10% omzetgroei door betere aanbevelingen",
+              "€40.000-€105.000 totale jaarlijkse waarde"
             ]
           }
         },
@@ -204,20 +207,20 @@ Belangrijk:
           description: "AI kan helpen bij het genereren van marketing content, productbeschrijvingen en social media posts.",
           businessCase: {
             potentialImpact: "Gemiddeld tot Hoog",
-            estimatedROI: "150-250%",
+            estimatedROI: "50-90%",
             implementationCost: "€10.000 - €18.000",
             timeToValue: "1-2 maanden",
             benefits: [
-              "Tijdsbesparing van 15-20 uur per week",
+              "Tijdsbesparing van 10-15 uur per week",
               "Consistente tone-of-voice in alle content",
               "Snellere time-to-market voor nieuwe producten",
               "Meer tijd voor strategische marketing activiteiten"
             ],
-            rationale: "De ROI van 150-250% is gebaseerd op de tijdsbesparing die wordt gerealiseerd door geautomatiseerde contentgeneratie. Met een besparing van 15-20 uur per week kan een marketingmedewerker zich richten op strategische taken in plaats van repetitieve contentcreatie. Bij een gemiddeld uurtarief van €40-€60 voor marketingpersoneel, levert dit een jaarlijkse waarde op van €30.000-€60.000. Daarnaast kan snellere time-to-market voor nieuwe producten leiden tot extra omzet door eerder op de markt te zijn dan concurrenten. De investering wordt daardoor binnen 4-8 maanden terugverdiend.",
+            rationale: "De ROI van 50-90% is gebaseerd op de tijdsbesparing die wordt gerealiseerd door geautomatiseerde contentgeneratie. Met een besparing van 10-15 uur per week kan een marketingmedewerker zich richten op strategische taken in plaats van repetitieve contentcreatie. Bij een gemiddeld uurtarief van €40-€50 voor marketingpersoneel, levert dit een jaarlijkse waarde op van €20.000-€35.000. De investering wordt daardoor binnen 6-12 maanden terugverdiend.",
             keyMetrics: [
-              "15-20 uur per week tijdsbesparing",
-              "€30.000-€60.000 jaarlijkse waarde door tijdsbesparing",
-              "50% snellere time-to-market voor nieuwe producten"
+              "10-15 uur per week tijdsbesparing",
+              "€20.000-€35.000 jaarlijkse waarde door tijdsbesparing",
+              "30-40% snellere time-to-market voor nieuwe producten"
             ]
           }
         }
