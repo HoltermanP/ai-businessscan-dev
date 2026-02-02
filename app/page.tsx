@@ -222,7 +222,7 @@ export default function Home() {
               </CardDescription>
               <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-medium">
-                  {scanCount ? `${scanCount.current} / ${scanCount.max}` : "0 / 10"} gratis quickscans gebruikt
+                  {scanCount ? `${scanCount.current} / ${scanCount.max}` : "0 / 5"} gratis quickscans gebruikt
                 </span>
               </div>
             </CardHeader>

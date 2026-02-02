@@ -727,21 +727,21 @@ export async function POST(request: NextRequest) {
     // Normaliseer email (lowercase en trim)
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Controleer limiet voor uitgebreide scans (max 5 totaal per email)
+    // Controleer limiet voor uitgebreide scans (max 3 totaal per email)
     const fullScanCount = await prisma.fullQuickscan.count({
       where: {
         email: normalizedEmail,
       },
     });
 
-    if (fullScanCount >= 5) {
+    if (fullScanCount >= 3) {
       return NextResponse.json(
         { 
           error: "Limiet bereikt",
-          message: "Je hebt je limiet van 5 gratis uitgebreide scans bereikt. Wil je meer gratis credits? Stuur een email naar businessscan@ai-group.nl met je verzoek.",
+          message: "Je hebt je limiet van 3 gratis uitgebreide scans bereikt. Wil je meer gratis credits? Stuur een email naar businessscan@ai-group.nl met je verzoek.",
           limitReached: true,
           limitType: "fullscan",
-          maxLimit: 5,
+          maxLimit: 3,
           currentCount: fullScanCount
         },
         { status: 429 } // 429 = Too Many Requests
@@ -855,7 +855,7 @@ export async function POST(request: NextRequest) {
         quickscanId: savedQuickscanId,
         scanCount: {
           current: fullScanCount,
-          max: 5,
+          max: 3,
           limitType: "fullscan"
         }
       });

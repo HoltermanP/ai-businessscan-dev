@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
         currentCount: 0,
-        maxLimit: 10,
+        maxLimit: 5,
         limitType: "quickscan"
       });
     }
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (!ipAddress) {
       return NextResponse.json({
         currentCount: 0,
-        maxLimit: 10,
+        maxLimit: 5,
         limitType: "quickscan"
       });
     }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         currentCount: quickscanCount,
-        maxLimit: 10,
+        maxLimit: 5,
         limitType: "quickscan"
       });
     } catch (dbError: any) {
@@ -46,14 +46,14 @@ export async function GET(request: NextRequest) {
         // Database kolom bestaat nog niet (migratie niet uitgevoerd)
         return NextResponse.json({
           currentCount: 0,
-          maxLimit: 10,
+          maxLimit: 5,
           limitType: "quickscan"
         });
       }
       
       return NextResponse.json({
         currentCount: 0,
-        maxLimit: 10,
+        maxLimit: 5,
         limitType: "quickscan"
       });
     }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     // Geef altijd een valide response terug, ook bij errors
     return NextResponse.json({
       currentCount: 0,
-      maxLimit: 10,
+      maxLimit: 5,
       limitType: "quickscan"
     });
   }

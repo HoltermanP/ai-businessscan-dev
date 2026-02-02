@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
         currentCount: 0,
-        maxLimit: 5,
+        maxLimit: 3,
         limitType: "fullscan"
       });
     }
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (!email) {
       return NextResponse.json({
         currentCount: 0,
-        maxLimit: 5,
+        maxLimit: 3,
         limitType: "fullscan"
       });
     }
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         currentCount: fullScanCount,
-        maxLimit: 5,
+        maxLimit: 3,
         limitType: "fullscan"
       });
     } catch (dbError: any) {
@@ -47,14 +47,14 @@ export async function GET(request: NextRequest) {
         // Database kolom bestaat nog niet (migratie niet uitgevoerd)
         return NextResponse.json({
           currentCount: 0,
-          maxLimit: 5,
+          maxLimit: 3,
           limitType: "fullscan"
         });
       }
       
       return NextResponse.json({
         currentCount: 0,
-        maxLimit: 5,
+        maxLimit: 3,
         limitType: "fullscan"
       });
     }
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Geef altijd een valide response terug, ook bij errors
     return NextResponse.json({
       currentCount: 0,
-      maxLimit: 5,
+      maxLimit: 3,
       limitType: "fullscan"
     });
   }

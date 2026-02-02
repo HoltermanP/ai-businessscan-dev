@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
     // Haal IP-adres op voor limiet tracking
     const ipAddress = getClientIp(request);
     
-    // Controleer limiet voor quickscans (max 10 totaal per IP)
+    // Controleer limiet voor quickscans (max 5 totaal per IP)
     if (ipAddress) {
       const quickscanCount = await prisma.quickscan.count({
         where: {
@@ -255,14 +255,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (quickscanCount >= 10) {
+      if (quickscanCount >= 5) {
         return NextResponse.json(
           { 
             error: "Limiet bereikt",
-            message: "Je hebt je limiet van 10 gratis quickscans bereikt. Wil je meer gratis credits? Stuur een email naar businessscan@ai-group.nl met je verzoek.",
+            message: "Je hebt je limiet van 5 gratis quickscans bereikt. Wil je meer gratis credits? Stuur een email naar businessscan@ai-group.nl met je verzoek.",
             limitReached: true,
             limitType: "quickscan",
-            maxLimit: 10,
+            maxLimit: 5,
             currentCount: quickscanCount
           },
           { status: 429 } // 429 = Too Many Requests
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
       scanCount: {
         current: currentCount,
-        max: 10,
+        max: 5,
         limitType: "quickscan"
       }
     });
